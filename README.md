@@ -67,6 +67,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 
 多個專案可以同時開啟、互不干擾：
 
+- **端口佔用清單**：啟動時列出 8780～8899 中已被占用的 port、PID 與程式名稱；選單 [2] 可隨時查看，並標示 `[this presentation]`
 - **自動找空的 port**：從 8780 往上找第一個沒人監聽的 port（到 8899），被占用時會在視窗中回報改用哪個
 - **只停自己的伺服器**：在 `.server.state` 記下 port 與 PID，兩者都吻合才停，不會關到別的專案或程式
 - **不快取**：回應一律加 `Cache-Control: no-store`，不同專案輪流用到同一個 port 時，瀏覽器不會顯示上一個專案的頁面
@@ -90,6 +91,13 @@ report-3d-showcase/
 └─ scripts/
    └─ screenshot_slides.ps1    # 無頭瀏覽器逐頁截圖、產生 contact sheet
 ```
+
+## 作者
+
+- **xuzi-06**：工作流程設計、報告文案與需求、測試回饋
+- **Claude**（Anthropic，透過 Claude Code）：協作開發 SKILL、Blender 建模腳本、three.js 前端與 server.bat
+
+本專案是人與 AI 協作完成的成果。
 
 ## 授權
 

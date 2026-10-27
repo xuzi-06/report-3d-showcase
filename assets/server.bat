@@ -23,6 +23,9 @@ if not defined PY goto nopython
 rem Stop a server left over from a previous run of this folder (if any)
 call :stop_previous
 
+rem Report which ports in our range are already taken, and by which program
+call :port_report
+
 call :find_free_port
 if errorlevel 1 (
   echo [ERROR] No free port between %PORT_START% and %PORT_END%.
@@ -56,7 +59,7 @@ echo.
 echo ==================================================
 echo   Presentation : %URL%
 echo   [1] Open presentation in browser again
-echo   [2] Check server status
+echo   [2] Server status + port usage report
 echo   [3] Stop server (release port %PORT%) and exit
 echo   Please use [3] before closing this window.
 echo   (If closed by mistake: run this file again, it cleans up the old server.)
@@ -70,6 +73,7 @@ goto menu
 :status
 call :pid_on_port
 if defined SRV_PID (echo Server is running on port %PORT% [PID %SRV_PID%].) else (echo Server is NOT running.)
+call :port_report
 goto menu
 
 :stop
@@ -101,6 +105,35 @@ if not errorlevel 1 (
   goto ffp_loop
 )
 set "PORT=%P%"
+exit /b 0
+
+:port_report
+rem List LISTENING TCP/IPv4 ports in [PORT_START, PORT_END] with PID and program name
+echo.
+echo Ports in use between %PORT_START% and %PORT_END%:
+set "RP_COUNT=0"
+for /f "delims==" %%v in ('set RP_SEEN_ 2^>nul') do set "%%v="
+for /f "tokens=2,5" %%a in ('netstat -ano -p tcp ^| findstr /c:"LISTENING"') do call :port_report_line %%a %%b
+if "%RP_COUNT%"=="0" echo   (none - every port in the range is free)
+exit /b 0
+
+:port_report_line
+rem %1 = local address like 127.0.0.1:8780, %2 = PID
+set "RL_ADDR=%~1"
+set "RL_PID=%~2"
+set "RL_PORT="
+for %%t in (%RL_ADDR::= %) do set "RL_PORT=%%t"
+if not defined RL_PORT exit /b 0
+if %RL_PORT% LSS %PORT_START% exit /b 0
+if %RL_PORT% GTR %PORT_END% exit /b 0
+if defined RP_SEEN_%RL_PORT%_%RL_PID% exit /b 0
+set "RP_SEEN_%RL_PORT%_%RL_PID%=1"
+set "RL_NAME=unknown"
+for /f "tokens=1 delims=," %%n in ('tasklist /fi "PID eq %RL_PID%" /fo csv /nh 2^>nul') do set "RL_NAME=%%~n"
+set "RL_MARK="
+if "%RL_PID%"=="%SRV_PID%" if "%RL_PORT%"=="%PORT%" set "RL_MARK=  [this presentation]"
+set /a RP_COUNT+=1
+echo   Port %RL_PORT%   PID %RL_PID%   %RL_NAME%%RL_MARK%
 exit /b 0
 
 :pid_on_port

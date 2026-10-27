@@ -57,6 +57,7 @@ description: 把使用者提供的報告文案／講稿／大綱，做成一套�
 ### 5. 編寫 `server.bat`
 複製 `assets/server.bat` 到專案根目錄，通常只需改 `APP_TITLE`。它會：
 - 停掉**本資料夾上次啟動**的伺服器（記在 `.server.state` 的 port＋PID，兩者都吻合才停，絕不動別的程式）
+- 啟動時先列出 `PORT_START`～`PORT_END` 範圍內被占用的 port（PID、程式名稱）；選單 [2] 可隨時再看一次，並以 `[this presentation]` 標示本專案的伺服器
 - 從 `PORT_START`（8780）往上找第一個沒人監聽的 port（到 `PORT_END`）——需要自己檢查，因為 Windows 上 Python `http.server` 會設 SO_REUSEADDR，綁到已被占用的 port 也不會報錯
 - 回應一律加 `Cache-Control: no-store`（內嵌的 Python 一行伺服器）：不同專案輪流用到同一個 port 時，瀏覽器才不會顯示上一個專案的快取頁面或模型
 - 用 Python `http.server` 只綁 127.0.0.1 啟動 → 開預設瀏覽器 → 重開／狀態／停止選單；`server.bat stop` 只停本資料夾的伺服器
