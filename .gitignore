@@ -1,0 +1,4 @@
+*.bak
+*.blend1
+.server.state
+_test_server.bat

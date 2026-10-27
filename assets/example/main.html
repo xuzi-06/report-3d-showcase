@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3f0e9">
+<title>資通訊科技與住｜3D 互動簡報</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --paper:#f3f0e9;--ink:#1d211f;--muted:#666b65;--line:rgba(29,33,31,.12);
+  --accent:#2c7a6d;--accent-soft:#d5ebe4;--amber:#d9822b;--amber-soft:#f8e3cb;
+  --card:rgba(255,255,252,.86);--mono:'DM Mono',ui-monospace,monospace;
+  --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;
+  --gutter:clamp(18px,4.6vw,72px);--ease:cubic-bezier(.65,0,.2,1);--spring:cubic-bezier(.2,.9,.25,1.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+
+/* ---------- 天空與 3D 畫布 ---------- */
+.sky{position:fixed;inset:0;transition:opacity 1.6s var(--ease)}
+.sky.day{background:radial-gradient(120% 90% at 70% 0%,#ffffff 0%,#f3f0e9 46%,#e8e4da 100%)}
+.sky.high{background:radial-gradient(130% 100% at 60% 0%,#e9f1f4 0%,#c9d9e0 48%,#aebfc8 100%);opacity:0}
+body[data-sky="high"] .sky.high{opacity:1}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
+
+/* ---------- 載入畫面 ---------- */
+.loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:var(--paper);transition:opacity .9s var(--ease),visibility .9s}
+.loader.done{opacity:0;visibility:hidden}
+.loader-inner{text-align:center}
+.loader b{display:block;font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-.04em}
+.loader b em{font-style:normal;color:var(--accent)}
+.loader-bar{width:min(260px,60vw);height:2px;margin:22px auto 10px;background:var(--line);overflow:hidden;border-radius:2px}
+.loader-bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.loader small{font:11px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.load-error{display:none;max-width:520px;margin:18px auto 0;padding:12px 16px;background:#fff4e5;color:#5b3f13;border:1px solid #ecd2a2;border-radius:10px;font-size:13px;line-height:1.7;text-align:left}
+.load-error.show{display:block}
+
+/* ---------- 頂部列 ---------- */
+.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);animation:pulse 2.4s ease-in-out infinite}
+.tools{display:flex;gap:8px;pointer-events:auto}
+.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,252,.72);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
+.tool:hover{background:#fff;border-color:rgba(44,122,109,.4)}
+.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
+.tool[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tool[aria-pressed="true"] kbd{background:rgba(255,255,255,.2)}
+.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
+.counter b{font-weight:500;color:var(--ink)}
+.counter span{color:var(--muted)}
+
+/* ---------- 資訊卡 ---------- */
+.card{
+  position:fixed;z-index:10;width:var(--w);left:var(--l);top:var(--t);
+  transform:translate(0,var(--ty));
+  max-height:calc(100svh - 150px);overflow:auto;scrollbar-width:none;
+  padding:clamp(20px,2.4vw,34px);border-radius:22px;
+  background:var(--card);backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:0 40px 90px -30px rgba(25,40,34,.35),0 1px 0 rgba(255,255,255,.8) inset;
+  transition:left 1s var(--ease),top 1s var(--ease),width 1s var(--ease),transform 1s var(--ease),opacity .45s,filter .45s;
+}
+.card::-webkit-scrollbar{display:none}
+.card[data-layout="left"]{--w:min(470px,38vw);--l:var(--gutter);--t:50%;--ty:-50%}
+.card[data-layout="right"]{--w:min(470px,38vw);--l:calc(100vw - var(--gutter) - var(--w));--t:50%;--ty:-50%}
+.card[data-layout="hero"]{--w:min(620px,48vw);--l:var(--gutter);--t:52%;--ty:-50%}
+.card[data-layout="bottom"]{--w:min(1080px,calc(100vw - 2 * var(--gutter)));--l:calc(50vw - var(--w) / 2);--t:calc(100svh - 74px);--ty:-100%}
+.card.leaving{opacity:0;filter:blur(8px)}
+.card::before{content:"";position:absolute;left:0;top:28px;width:3px;height:42px;border-radius:0 3px 3px 0;background:var(--accent)}
+.card[data-layout="bottom"] .card-grid{display:grid;grid-template-columns:minmax(240px,.8fr) 1.6fr;gap:28px;align-items:start}
+.card[data-layout="bottom"] .title{font-size:clamp(28px,2.8vw,40px)}
+.card[data-layout="bottom"] .dek{font-size:14px}
+.card[data-layout="bottom"] .facts{display:none}
+
+.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.title{font-size:clamp(34px,4vw,60px);line-height:1.12;letter-spacing:-.045em;font-weight:900;margin:16px 0 14px}
+.card[data-layout="hero"] .title{font-size:clamp(48px,6.4vw,96px);margin:20px 0 18px}
+.title em{font-style:normal;color:var(--accent);background:linear-gradient(transparent 68%,var(--accent-soft) 68%,var(--accent-soft) 92%,transparent 92%);padding:0 .04em}
+.title .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+.title .ln>span{display:inline-block}
+.dek{font-size:clamp(14px,1.15vw,16.5px);line-height:1.9;color:#454a45;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font:11px var(--mono);letter-spacing:.06em;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.7)}
+.facts{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:4px;counter-reset:f}
+.facts li{counter-increment:f;display:grid;grid-template-columns:30px 1fr;gap:8px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.75;color:#3d423e}
+.facts li::before{content:counter(f,decimal-leading-zero);font:11px var(--mono);color:var(--accent);padding-top:3px}
+.facts b{color:var(--ink)}
+.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
+.sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.5}
+.sources::before{content:"參考資料";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
+.sources a{text-decoration:none;border-bottom:1px solid rgba(44,122,109,.35)}
+.sources a:hover{border-bottom-color:var(--accent)}
+
+/* 進場動畫：.anim 元素依 --i 依序出現 */
+.anim{opacity:0;transform:translateY(16px)}
+.card.in .anim{animation:rise .8s var(--spring) forwards;animation-delay:calc(var(--i,0) * 70ms + 120ms)}
+.title .ln>span{transform:translateY(105%)}
+.card.in .title .ln>span{animation:lineUp .9s var(--ease) forwards;animation-delay:calc(var(--i,0) * 90ms + 80ms)}
+.part[hidden]{display:none!important}
+.part.reveal .anim{animation:rise .7s var(--spring) both;animation-delay:calc(var(--i,0) * 90ms)}
+
+/* ---------- 圖解 ---------- */
+.diagram{margin-top:4px}
+.flowrow{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:0;position:relative}
+.node{position:relative;padding:14px 16px 14px 0}
+.node .k{font:10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.node h4{margin:6px 0 6px;font-size:18px;letter-spacing:-.02em}
+.node p{margin:0;font-size:12.5px;line-height:1.7;color:#4c514c}
+.node .bar{height:3px;border-radius:3px;background:var(--line);margin-bottom:12px;overflow:hidden;position:relative}
+.node .bar::after{content:"";position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left}
+.part.reveal .node .bar::after,.card.in .node .bar::after{animation:fill .7s var(--ease) forwards;animation-delay:calc(var(--i,0) * 160ms + 300ms)}
+.node .arrow{position:absolute;right:6px;top:-3px;font:12px var(--mono);color:var(--accent)}
+.cols{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:12px}
+.col{padding:16px;border-radius:14px;background:rgba(255,255,255,.65);border:1px solid var(--line)}
+.col.now{background:var(--accent-soft);border-color:transparent}
+.col.warn{background:var(--amber-soft);border-color:transparent}
+.col .k{font:10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.col.warn .k{color:#a85a12}
+.col h4{margin:6px 0 8px;font-size:17px;letter-spacing:-.02em}
+.col ul{margin:0;padding-left:1.1em;font-size:12.5px;line-height:1.75;color:#454a45}
+
+/* ---------- 指引線、標籤、熱點 ---------- */
+#leader{position:fixed;inset:0;z-index:8;pointer-events:none;width:100%;height:100%;opacity:0;transition:opacity .5s}
+#leader.show{opacity:1}
+#leader path{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 5;animation:dash 1.2s linear infinite}
+#leader .dot{fill:var(--accent)}
+#leader .ring{fill:none;stroke:var(--accent);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:ring 1.8s ease-out infinite}
+.tag{position:fixed;z-index:9;left:0;top:0;pointer-events:none;padding:5px 10px;border-radius:999px;background:var(--ink);color:#fff;font:11px var(--mono);letter-spacing:.06em;white-space:nowrap;opacity:0;transition:opacity .4s}
+.tag.show{opacity:1}
+#hotspots{position:fixed;inset:0;z-index:9;pointer-events:none}
+.hot{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:8px;padding:4px 11px 4px 4px;border:0;border-radius:999px;background:rgba(255,255,252,.92);box-shadow:0 8px 24px -8px rgba(0,0,0,.25);font-size:12px;font-weight:700;cursor:pointer;opacity:0;transform:translate(-14px,-50%) scale(.8);transition:opacity .4s,transform .5s var(--spring),background .2s}
+.hot.show{opacity:1;transform:translate(-14px,-50%) scale(1)}
+.hot:hover{background:var(--ink);color:#fff}
+.hot i{width:20px;height:20px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;font:10px var(--mono);font-style:normal;box-shadow:0 0 0 0 rgba(44,122,109,.5);animation:halo 2s infinite}
+
+/* ---------- 進度軌 ---------- */
+.rail{position:fixed;z-index:20;left:var(--gutter);right:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;gap:6px;align-items:flex-end}
+.seg{flex:1;height:22px;border:0;padding:0;background:none;cursor:pointer;position:relative}
+.seg::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:3px;background:rgba(29,33,31,.14);transition:background .3s,height .3s}
+.seg i{position:absolute;left:0;bottom:0;height:3px;border-radius:3px;background:var(--accent);width:0;transition:width .7s var(--ease)}
+.seg.done i{width:100%}
+.seg:hover::before{height:5px}
+.seg span{position:absolute;left:0;bottom:12px;font:10px var(--mono);letter-spacing:.06em;white-space:nowrap;color:var(--muted);opacity:0;transform:translateY(4px);transition:.25s}
+.seg:hover span,.seg.active span{opacity:1;transform:none}
+.seg.active span{color:var(--ink)}
+.navbtns{display:flex;gap:6px;margin-left:12px}
+.navbtns button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,252,.75);cursor:pointer;font-size:15px;transition:.2s}
+.navbtns button:hover{background:var(--ink);color:#fff}
+
+/* ---------- 講稿面板 ---------- */
+.notes{position:fixed;z-index:30;right:12px;top:60px;bottom:64px;width:min(420px,calc(100vw - 24px));padding:22px 24px;border-radius:18px;background:rgba(24,28,26,.94);color:#e9ece8;backdrop-filter:blur(12px);transform:translateX(calc(100% + 24px));transition:transform .6s var(--ease);display:flex;flex-direction:column;gap:12px}
+.notes.open{transform:none}
+.notes header{display:flex;justify-content:space-between;align-items:baseline;font:11px var(--mono);letter-spacing:.12em;color:#9fb5ad}
+.notes h3{margin:0;font-size:20px;letter-spacing:-.02em}
+.notes .body{flex:1;overflow:auto;font-size:15px;line-height:2;color:#dfe5e1;white-space:pre-line;padding-right:6px}
+.notes .body::-webkit-scrollbar{width:4px}.notes .body::-webkit-scrollbar-thumb{background:#4b5a54;border-radius:4px}
+.notes footer{font:11px var(--mono);color:#93a39c;border-top:1px solid #36403c;padding-top:10px;display:flex;justify-content:space-between;gap:10px}
+.notes .timer{color:#7fe0cb}
+
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes lineUp{to{transform:none}}
+@keyframes fill{to{transform:scaleX(1)}}
+@keyframes nudge{to{transform:translateX(8px);opacity:.5}}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(213,235,228,.4)}}
+@keyframes dash{to{stroke-dashoffset:-18}}
+@keyframes ring{from{r:6;opacity:1}to{r:22;opacity:0}}
+@keyframes halo{70%{box-shadow:0 0 0 8px rgba(44,122,109,0)}100%{box-shadow:0 0 0 0 rgba(44,122,109,0)}}
+
+@media (max-width:820px){
+  .card,.card[data-layout]{--w:calc(100vw - 2 * var(--gutter));--l:var(--gutter);--t:calc(100svh - 70px);--ty:-100%;max-height:52svh;padding:20px}
+  .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
+  .card[data-layout="bottom"] .card-grid{grid-template-columns:1fr;gap:12px}
+  .flowrow,.cols{grid-template-columns:1fr 1fr}
+  .tool .lbl{display:none}
+  .seg span{display:none}
+  .navbtns{display:none}
+}
+html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+</head>
+<body data-sky="high">
+<div class="sky day"></div><div class="sky high"></div>
+<canvas id="world" aria-label="智慧住宅與通訊衛星 3D 場景"></canvas>
+<svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
+<div class="tag" aria-hidden="true"></div>
+<div id="hotspots"></div>
+
+<header class="topbar">
+  <div class="brand"><i></i>ICT × LIVING</div>
+  <div class="tools">
+    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">13</span></span></div>
+    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
+    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
+  </div>
+</header>
+
+<article class="card" data-layout="hero" aria-live="polite"></article>
+
+<nav class="rail" aria-label="章節"><div class="navbtns"><button id="prevBtn" aria-label="上一步">←</button><button id="nextBtn" aria-label="下一步">→</button></div></nav>
+
+<aside class="notes" aria-label="講稿">
+  <header><span id="notesIdx">01 / 13</span><span class="timer" id="timer">00:00</span></header>
+  <h3 id="notesTitle"></h3>
+  <div class="body" id="notesBody"></div>
+  <footer><span id="notesNext"></span><span>← → 換頁　N 關閉</span></footer>
+</aside>
+
+<div class="loader"><div class="loader-inner"><b>資通訊科技與<em>住</em></b><div class="loader-bar"><i></i></div><small id="loadPct">LOADING 3D SCENE · 0%</small><div class="load-error" role="status"></div></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =====================================================================
+   簡報內容：每一頁的文字、步驟（版面變化）、鏡頭與講稿都在這裡
+   steps：每按一次「下一步」進入下一個 step；layout 改變時資訊卡會移動
+   ===================================================================== */
+const SLIDES = [
+{ id:'cover', label:'開場', sky:'high', eyebrow:'ICT × LIVING · 2026',
+  title:'資通訊科技<br>與<em>住</em>',
+  dek:'從天上的通訊衛星，到家門口的一枚指紋——看資通訊科技如何走進住宅，又如何讓住宅資料在合法、受保護的前提下，支援公共服務。',
+  chips:['5G / 6G','智慧住宅','能源管理','資料治理'], hint:true,
+  steps:[{layout:'hero',parts:['dek','chips']}],
+  notes:`各位老師、同學好，我們這組報告的主題是「資通訊科技與住」。
+
+先請大家想一想：今天早上出門前，你家裡有多少東西是連著網路的？手機一定有，可能還有電視、冷氣、掃地機器人。住宅早就不是一個封閉的盒子了。
+
+畫面上這顆是通訊衛星。我們選擇從天空開始，是因為家裡的連線，正從光纖、行動網路，一路延伸到太空。
+
+接下來大約十五分鐘，我們分三段來談：第一段是「連線」，從現在的 5G 到發展中的 6G；第二段會走進一棟三層樓的智慧住宅，看七個關鍵設備怎麼運作；第三段談「資料」，包括隱私的邊界，以及建築資料如何協助地政服務。
+
+那我們就從天空開始。` },
+
+{ id:'network', label:'5G→6G', sky:'high', eyebrow:'CONNECTIVITY',
+  title:'連線，<br>從<em>天空</em>開始',
+  dek:'住宅對外的連線，正從光纖、行動網路延伸到衛星。5G 已廣泛商轉；6G 以 ITU 的 IMT-2030 為框架，目標之一是把地面與非地面（衛星）網路整合起來。',
+  diagram:{type:'cols',items:[
+    {k:'NOW · 5G',cls:'now',h:'已在使用',li:['高速率、低延遲、大量連結','家用寬頻、行動上網、物聯網','依賴地面基地台覆蓋']},
+    {k:'NEXT · 6G / IMT-2030',h:'標準發展中',li:['ITU 已訂定願景框架，技術要求研議中','整合感知與通訊、AI 與通訊','地面網路＋衛星：無所不在的連線']},
+    {k:'FOR HOME',h:'對住宅的意義',li:['偏遠地區也能有穩定連線','災害時多一條備援路徑','更多設備同時、可靠地上線']}]},
+  steps:[{layout:'right',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
+  sources:[['ITU｜IMT-2030（6G）','https://www.itu.int/en/ITU-R/study-groups/rsg5/rwp5d/imt-2030/pages/default.aspx'],['ITU｜IMT-2030 技術要求','https://www.itu.int/hub/2026/03/imt-2030-technical-requirements-for-the-6g-future/']],
+  notes:`先看連線。現在畫面上有三個角色：天上的衛星、左邊的 5G 基地台，以及我們的住宅。流動的光點，代表資料在它們之間傳遞。
+
+5G 已經是現在進行式。它有三個特色：速度快、延遲低，而且可以同時連接大量設備。但 5G 主要仰賴地面基地台，所以在山區、離島，或是災害發生的時候，覆蓋就可能出現缺口。
+
+（下一步）那 6G 呢？國際電信聯盟 ITU 把下一代行動通訊稱為 IMT-2030，目前已經訂出願景框架，技術要求還在研議，所以 6G 還不是現成的產品。它的方向之一，是把地面網路和衛星這類「非地面網路」整合在一起。
+
+對住宅來說，這代表三件事：偏遠地區也有機會得到穩定連線；地震、颱風造成地面線路中斷時，多了一條備援路徑；家裡也能有更多設備同時、可靠地上線。
+
+不過，對外的連線再快，家裡面還是需要一套系統把設備串起來。接下來，我們就降落到這棟房子。` },
+
+{ id:'system', label:'系統總覽', sky:'day', eyebrow:'SMART HOME SYSTEM',
+  title:'一棟會<br><em>回應</em>的房子',
+  dek:'這棟三層住宅放進了七個關鍵設備。它們各自分工，經由家庭網路協作——點選畫面上的標籤可以直接跳到該設備。',
+  facts:['<b>一樓・玄關與電力：</b>生物識別門鎖、智慧開關、智慧電表、家庭閘道器','<b>二樓・客廳：</b>空氣品質感測器，連動空調','<b>三樓・書房：</b>家庭邊緣運算主機、儲能電池；<b>屋頂：</b>太陽能板','<b>實際案例：</b>台達在台灣的智慧建築案例，如新竹元太廠、台北瑞光總部、竹北普生竹創，用途與認證各不相同'],
+  diagram:{type:'flow',items:[
+    {k:'01 SENSE',h:'感知',p:'感測器、門鎖、電表讀取環境與設備狀態'},
+    {k:'02 DECIDE',h:'判斷',p:'閘道器或邊緣主機依規則與情境做判斷'},
+    {k:'03 ACT',h:'控制',p:'開燈、開空調、解鎖、調度儲能'},
+    {k:'04 FEEDBACK',h:'回饋',p:'確認結果並告知住戶，保留手動改變的權利'}]},
+  hotspots:true,
+  steps:[{layout:'left',parts:['dek','facts']},{layout:'bottom',parts:['dek','diagram']}],
+  sources:[['台達｜台灣成功案例','https://esg-consulting.deltaww.com/zh-tw/success-stories'],['台達｜瑞光總部大樓','https://esg-consulting.deltaww.com/zh-tw/success-stories/ydiql497qmd2h5tylqnlsfci'],['台達｜竹北普生竹創大樓','https://esg-consulting.deltaww.com/zh-tw/success-stories/t9ygfpceqmbyxezztp5pd7d1']],
+  notes:`這是我們用 Blender 建立的一棟三層智慧住宅。畫面上的標籤，就是今天要介紹的七個設備。
+
+一樓是玄關與電力，有生物識別門鎖、智慧開關、智慧電表和家庭閘道器；二樓客廳有空氣品質感測器；三樓書房有家庭邊緣運算主機和儲能電池；屋頂則是太陽能板。
+
+這些不只是想像。像台達在台灣就有新竹元太廠、台北瑞光總部、竹北普生竹創等智慧建築案例。不過要提醒，這些案例的用途和取得的認證各不相同，不能直接等同一般住宅。
+
+（下一步）那這些設備是怎麼合作的？其實可以濃縮成一個循環：感知、判斷、控制、回饋。感測器、門鎖、電表先讀到現場狀態；閘道器或邊緣主機依照規則做判斷；接著控制燈、空調或門鎖；最後確認結果，再告訴住戶。
+
+我們特別強調最後一環：住戶要知道系統做了什麼，也要隨時能改變它。
+
+接下來，從大門口開始。` },
+
+{ id:'lock', label:'門鎖', sky:'day', eyebrow:'ACCESS · 1F', focus:'生物識別門鎖', tagText:'一樓・生物識別門鎖',
+  title:'生物識別<br><em>智慧門鎖</em>',
+  dek:'用指紋確認「你是你」，再驅動實體鎖舌。方便之外，更要想清楚：辨識失敗、沒電、資料外洩時怎麼辦？',
+  facts:['<b>運作：</b>讀取指紋特徵 → 與登錄樣板比對 → 比對通過才解鎖','<b>權限：</b>家人、訪客、臨時密碼可分級設定，並留下進出紀錄','<b>備援：</b>保留實體鑰匙或密碼；生物特徵資料宜加密保存在鎖內，不上傳雲端'],
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
+  sources:[['NIST SP 800-63B｜數位身分與生物辨識','https://pages.nist.gov/800-63-4/sp800-63b.html']],
+  notes:`第一個設備，是大門上的生物識別門鎖。
+
+它的流程很單純：讀取指紋特徵，和事先登錄的樣板比對，比對通過才驅動鎖舌開門。對住戶來說，最大的好處是不用再擔心忘記帶鑰匙。
+
+（下一步）但我們更想談的是「設計」，有三個重點。
+
+第一是權限。家人、來訪的親友、臨時的維修人員，可以給不同的權限，每一次進出也都會留下紀錄。
+
+第二是備援。手指受傷、電池沒電、辨識誤判都可能發生，所以一定要保留鑰匙或密碼這類替代方式，不能讓人被關在自己家門外。
+
+第三是生物資料的保護。指紋和密碼最大的不同，是密碼外洩可以更換，指紋外洩卻無法挽回。所以比較好的做法，是把指紋資料加密保存在鎖本身，而不是上傳到雲端。` },
+
+{ id:'switch', label:'智慧開關', sky:'day', eyebrow:'MANUAL CONTROL · 1F', focus:'智慧開關', tagText:'一樓・智慧開關',
+  title:'智慧開關<br>讓控制<em>留在手邊</em>',
+  dek:'按下去就亮——這是最直覺的介面。智慧開關保留了這個習慣，再加上排程與情境自動化。',
+  facts:['<b>情境：</b>回家自動開玄關燈、離家一鍵全關、夜間只開低亮度','<b>相容：</b>開關、燈具與閘道器要支援相同協定（例如 Matter）才能互通','<b>原則：</b>斷網或系統故障時，仍要能當作一般開關使用'],
+  steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
+  sources:[['Connectivity Standards Alliance｜Matter','https://csa-iot.org/all-solutions/matter/']],
+  notes:`門旁邊這個小小的面板，是智慧開關。
+
+很多人以為智慧家庭就是什麼都用手機或語音控制。但想像一下，半夜起床上廁所，你會想先解鎖手機、打開 App 才開燈嗎？「按下去就亮」仍然是最直覺、最可靠的介面，對長輩和小孩更是如此。智慧開關保留了這個習慣，再把排程和情境加進來。
+
+（下一步）例如：回家時玄關燈自動亮起；出門時按一下，就關掉全家的燈；半夜起床時只開低亮度。
+
+要做到這些，開關、燈具和閘道器必須說同一種「語言」。過去不同品牌常常互不相通，像 Matter 這類跨品牌的標準，就是在解決這個互通問題。
+
+最後一個原則很重要：就算斷網或系統故障，它也必須能當成一般開關使用。智慧化不應該讓最基本的功能變得更脆弱。` },
+
+{ id:'meter', label:'智慧電表', sky:'day', eyebrow:'POWER & DATA · 1F', focus:'一樓｜智慧電表', floor:'1F', tagText:'一樓・智慧電表',
+  title:'智慧電表<br>讀懂家的<em>用電</em>',
+  dek:'智慧電表（AMI，先進讀表基礎建設）能定時回傳用電資料，讓用電從「每兩個月一張帳單」變成「看得見的曲線」。',
+  facts:['<b>可觀察：</b>分時段的用電量（常見為每 15 分鐘一筆，依電業設定）','<b>可應用：</b>時間電價、異常用電提醒、節能建議','<b>隱私：</b>用電曲線能推測作息（幾點起床、何時出門），分享須經同意並限縮用途'],
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
+  sources:[['經濟部｜智慧電表與 AMI','https://service.moea.gov.tw/EE514/tw/geipc/155-8023.html']],
+  notes:`走進一樓。為了讓大家看清楚，我們把一樓的落地玻璃淡化了。後牆上白色的是智慧電表，旁邊深色的是電箱。
+
+傳統電表要靠人到現場抄表，我們通常兩個月才收到一張帳單。智慧電表屬於 AMI，也就是「先進讀表基礎建設」，它可以定時把用電資料傳回去，常見是每 15 分鐘一筆，實際依電業設定。
+
+（下一步）有了這些資料，可以做三件事：第一，時間電價，讓住戶把洗衣、充電這類用電移到比較便宜的時段；第二，異常提醒，例如全家出門後用電還很高，可能是電器忘了關；第三，給出節能建議。
+
+但我們也要注意：一條用電曲線，其實能看出這個家幾點起床、什麼時候出門、晚上幾點睡。所以用電資料雖然不是照片，一樣屬於敏感資料，分享之前要經過同意，用途也要限縮。` },
+
+{ id:'gateway', label:'閘道器', sky:'day', eyebrow:'HOME NETWORK · 1F', focus:'一樓｜家庭閘道器', floor:'1F', tagText:'一樓・家庭閘道器',
+  title:'家庭閘道器<br>串起<em>所有設備</em>',
+  dek:'門鎖、開關、感測器各說各的「無線語言」。閘道器負責翻譯與轉送，也守住家與網際網路之間的那道門。',
+  facts:['<b>匯接：</b>Wi-Fi、Thread、Zigbee 等不同協定在這裡交會','<b>安全：</b>更改預設密碼、定期更新韌體、訪客與設備網路分開','<b>分工：</b>家中自動化在本地執行；遠端控制才經過雲端'],
+  steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
+  sources:[['Connectivity Standards Alliance｜Matter','https://csa-iot.org/all-solutions/matter/']],
+  notes:`櫃子上這台有兩根天線的，是家庭閘道器。現在畫面上的光點，就是門鎖、開關和電表把資料送到它這裡。
+
+為什麼需要它？因為這些設備用的無線協定不一樣，有的用 Wi-Fi，有的用 Thread 或 Zigbee。閘道器就像一位翻譯，把大家的訊息轉成彼此聽得懂的形式。
+
+（下一步）它同時也是家裡和網際網路之間的那道門，所以資安特別重要。常見的建議有三個：預設密碼一定要改；韌體要定期更新，修補已知的漏洞；最好把訪客用的網路和家裡設備的網路分開，避免一台設備被入侵，就波及全部。
+
+還有一個架構上的選擇：家裡的自動化盡量在本地執行，只有在外面用手機遠端控制時，才經過雲端。這樣反應比較快，斷網的時候也不會整個停擺。` },
+
+{ id:'sensor', label:'環境感測', sky:'day', eyebrow:'ENVIRONMENT · 2F', focus:'二樓｜空氣品質感測器', floor:'2F', tagText:'二樓・空氣品質感測器',
+  title:'環境感測<br>讓空間<em>有回應</em>',
+  dek:'客廳牆上的空氣品質感測器，持續量測二氧化碳、PM2.5 與溫濕度，作為提醒與自動化的條件。',
+  facts:['<b>量測：</b>CO₂、PM2.5、溫度、濕度（項目依設備而異）','<b>限制：</b>讀值受安裝位置、校正與設備誤差影響','<b>原則：</b>保留人工確認與手動控制，不讓單一讀值決定一切'],
+  diagram:{type:'flow',items:[
+    {k:'SENSE',h:'感測',p:'客廳 CO₂ 讀值持續上升'},
+    {k:'DECIDE',h:'判斷',p:'超過設定值（室內空氣品質標準 CO₂ 8 小時值為 1,000 ppm）'},
+    {k:'ACT',h:'回應',p:'開啟換氣或空調送風'},
+    {k:'REPORT',h:'回報',p:'顯示環變色、手機通知，住戶可取消'}]},
+  steps:[{layout:'left',parts:['dek','facts']},{layout:'bottom',parts:['dek','diagram']}],
+  sources:[['美國 EPA｜室內空氣品質監測','https://www.epa.gov/indoor-air-quality-iaq/low-cost-air-pollution-monitors-and-indoor-air-quality'],['環境部｜室內空氣品質標準','https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=O0130009']],
+  notes:`上到二樓客廳。電視右邊這個有一圈綠色光環的小盒子，就是空氣品質感測器。
+
+它會持續量測二氧化碳、PM2.5、溫度和濕度，實際項目依產品而不同。其中二氧化碳特別值得注意：人多、門窗又緊閉的時候，濃度會慢慢上升，人就容易覺得悶、想睡。
+
+但要提醒，感測器只看得到它所在位置的狀況，設備本身也有校正和誤差的問題。所以，不應該讓單一讀值決定一切。
+
+（下一步）我們用一個例子，把「感知、判斷、控制、回饋」完整走一遍。
+
+週末一家人在客廳聊天，二氧化碳慢慢上升，這是感知；系統判斷超過設定值，參考台灣的室內空氣品質標準，二氧化碳的 8 小時值是 1,000 ppm，這是判斷；接著自動開啟換氣或空調送風，這是控制；最後顯示環變色、手機收到通知，住戶如果覺得不需要，可以直接取消，這是回饋。` },
+
+{ id:'edge', label:'邊緣運算', sky:'day', eyebrow:'LOCAL COMPUTING · 3F', focus:'三樓｜家庭邊緣運算主機', floor:'3F', tagText:'三樓・家庭邊緣運算主機',
+  title:'家庭邊緣運算<br>在家<em>先處理</em>',
+  dek:'書房角落的小型主機，在家中就近處理自動化規則、影像辨識與資料彙整，而不是什麼都送上雲端。',
+  facts:['<b>好處：</b>反應快、斷網仍能運作、敏感資料不必離開家','<b>取捨：</b>需要更新、備份與權限管理，硬體也有使用壽命','<b>關鍵問題：</b>哪些資料留在家？哪些服務才真的需要連外？'],
+  steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
+  sources:[['NIST｜邊緣運算研究','https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=934685']],
+  notes:`三樓是書房。角落這台亮著四條綠燈的機櫃，是家庭邊緣運算主機。
+
+「邊緣運算」的意思是：資料在靠近產生它的地方先處理，而不是全部送到遠端的雲端機房。打個比方，雲端像是總公司，邊緣主機像是家裡的管家，很多小事管家當場就能處理，不必每件事都打電話回總公司。
+
+（下一步）這樣做有三個好處：第一，反應比較快；第二，就算對外網路斷了，家裡的自動化仍然能運作；第三，像門口攝影機這類敏感影像，可以在家裡就分析完，不需要離開家。
+
+但它也有代價：主機需要有人更新、備份、管理權限，硬體也會老化。所以真正要討論的問題是：哪些資料應該留在家，哪些服務才真的需要連外？這個問題，我們等一下談隱私時會再回來。` },
+
+{ id:'solar', label:'屋頂能源', sky:'day', eyebrow:'ENERGY LOOP · ROOF', focus:'屋頂｜太陽能板', tagText:'屋頂・太陽能板',
+  title:'屋頂能源<br>接上住宅<em>管理</em>',
+  dek:'屋頂的八片太陽能板、三樓的儲能電池、一樓的智慧電表，組成一個看得見的能源迴圈。',
+  facts:['<b>發電：</b>受日照、方位、遮蔭與天候影響，不是固定值','<b>調度：</b>白天先自用、多餘的儲存，晚上再放電使用','<b>回饋：</b>把發電與用電放在同一張圖上，住戶才能做出選擇'],
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
+  sources:[['美國能源部｜太陽光電原理','https://www.energy.gov/cmei/systems/solar-photovoltaic-technology-basics']],
+  notes:`最後來到屋頂。這裡有八片太陽能板，旁邊白色的小盒子是逆變器，負責把太陽能板產生的直流電，轉換成家裡可以使用的交流電。
+
+畫面上橘色的光點，顯示電力從屋頂流到三樓的儲能電池，再到一樓的智慧電表。
+
+（下一步）這裡有三個重點。
+
+第一，發電量不是固定的，它會受日照、方位、遮蔭和天氣影響，陰雨天和大晴天可能差很多。
+
+第二是調度：白天發的電先給家裡用，多的存進電池，晚上再拿出來用。
+
+第三是回饋：只有把「發了多少電」和「用了多少電」放在同一張圖上，住戶才看得懂，也才能做出調整。例如看到中午發電最多，就把洗衣機、洗碗機改到中午運轉。
+
+節能最後還是要靠人的選擇，系統的角色，是讓好的選擇變得容易。` },
+
+{ id:'privacy', label:'資料邊界', sky:'day', eyebrow:'DATA BOUNDARY',
+  title:'隱私，從資料<br>進出家的<em>邊界</em>開始',
+  dek:'智慧住宅每天產生大量資料。真正的問題不是「有沒有資料」，而是：哪些留在家、哪些可以出門、誰有權看？',
+  diagram:{type:'cols',items:[
+    {k:'STAY HOME',cls:'now',h:'留在家中處理',li:['門鎖指紋樣板、進出紀錄','室內影像、即時感測讀值','自動化規則與在地運算']},
+    {k:'WITH CONSENT',cls:'warn',h:'經同意才出門',li:['用電統計（給電業計費）','設備狀態（遠端維修診斷）','匿名化後的彙總資料']},
+    {k:'PRINCIPLES',h:'三個原則',li:['最小蒐集：只收必要的','在地優先：能在家處理就不上傳','可查可撤回：住戶看得懂、關得掉']}]},
+  steps:[{layout:'right',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
+  notes:`看完設備，我們把鏡頭拉遠。房子外面這層半透明的罩子，代表「家的資料邊界」。綠色光點留在家裡，橘色光點則穿出邊界、對外傳送。
+
+回顧剛才的七個設備：門鎖知道誰在什麼時候進出，電表知道一家人的作息，感測器知道家裡有沒有人。智慧住宅每天都在產生資料，所以問題不是有沒有資料，而是：哪些留在家、哪些可以出門、誰有權看？
+
+（下一步）我們整理成三欄。
+
+第一欄是留在家中處理的：指紋樣板、室內影像、即時感測讀值，這些最敏感。
+
+第二欄是經同意才出門的：例如給電業計費的用電統計、遠端維修需要的設備狀態，或是匿名化之後的彙總資料。
+
+第三欄是三個原則：最小蒐集，只收必要的；在地優先，能在家處理就不上傳；可查可撤回，住戶要看得懂、管得到，也要關得掉。
+
+我們再來看最後一個應用：公共服務。` },
+
+{ id:'land', label:'地政服務', sky:'high', eyebrow:'IMT-2030 × LAND SERVICES',
+  title:'建築資料<br>助力<em>地政服務</em>',
+  dek:'延伸建築資料的應用，思考如何改善地政的收件、查核與交接。這是改革構想：資料須依法取得、妥善保護，並由人員做最後決定。',
+  diagram:{type:'flow',items:[
+    {k:'01 INTAKE',h:'收件與交接',p:'標準欄位自動檢核附件、分派案件；狀態與待辦隨案交接'},
+    {k:'02 FIELD',h:'外勤與上傳',p:'外勤以行動裝置上傳照片、測量成果與補件，內勤即時接續'},
+    {k:'03 REVIEW',h:'查核與保障',p:'系統提示圖資差異與缺漏，由審查人員核實決定'},
+    {k:'04 GUARD',h:'資料界線',p:'僅用授權且必要的建築資料，不自動取得住戶感測資料'}]},
+  steps:[{layout:'left',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
+  sources:[['內政部｜資訊服務韌性發展計畫','https://ws.moi.gov.tw/Download.ashx?n=5YWn5pS%2F6LOH6KiK5pyN5YuZ6Z%2BM5oCn55m85bGV6KiI55WrKDExNi0xMjDlubQpLnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvNDAwL3JlbGZpbGUvMTIzNTEvMzM4NjE3L2NkYWQxODg2LThhOTYtNGJjNC1hOGZiZWYxN2ExYy5wZGY%3D'],['數位發展部｜6G 政策研議中','https://moda.gov.tw/press/clarification/20718'],['ITU｜IMT-2030 技術要求','https://www.itu.int/hub/2026/03/imt-2030-technical-requirements-for-the-6g-future/']],
+  notes:`鏡頭回到高空。地面上的紅點正一個一個亮起來，每一個紅點，代表一筆需要處理的土地或建物案件；中間閃爍的大紅點和紅色光環，就是我們這棟房子。
+
+這一段是我們的改革構想：建築本身的資料，例如位置、樓層、面積和圖資，如果能標準化，就有機會改善地政服務的效率。現在申辦案件，常常需要反覆補件、人工核對，外勤和內勤之間的交接也容易中斷。
+
+（下一步）我們把構想分成四個環節。
+
+第一是收件與交接：用標準欄位自動檢核附件是否齊全，再分派案件；案件的狀態和待辦事項跟著案子走，就算換人承辦也不會斷線。
+
+第二是外勤與上傳：外勤人員用行動裝置，直接在現場上傳照片、測量成果和補件。未來 5G、6G 和衛星讓現場連線更穩定，內勤就能即時接手。
+
+第三是查核：系統可以提示圖資差異或缺漏，但最後由審查人員核實、做出決定。
+
+第四點最重要：只使用依法授權、而且必要的建築資料，絕不自動取得住戶家裡的感測資料。
+
+也要說明，6G 在台灣仍在政策研議階段，所以這是面向未來的構想。` },
+
+{ id:'closing', label:'結語', sky:'day', eyebrow:'CONCLUSION',
+  title:'科技走進家，<br>人仍是<em>主角</em>',
+  dek:'連線讓住宅更聰明；但好的智慧住宅，要讓人看得懂、管得到、關得掉。',
+  facts:['<b>連線：</b>5G 已普及；6G（IMT-2030）仍在標準發展，衛星將補上覆蓋缺口','<b>系統：</b>感知 → 判斷 → 控制 → 回饋，每一環都保留手動與替代方案','<b>治理：</b>資料最小化、在地優先；公共服務只用依法授權的必要資料'],
+  chips:['謝謝聆聽','Q & A'],
+  steps:[{layout:'left',parts:['dek','facts','chips']}],
+  notes:`最後做個總結。
+
+第一是連線：5G 已經普及，6G 也就是 IMT-2030 還在標準發展中，未來衛星可望補上地面網路的覆蓋缺口。
+
+第二是系統：從門鎖、開關、電表、閘道器，到感測器、邊緣運算和太陽能，它們都在走「感知、判斷、控制、回饋」這個循環，而每一環都應該保留手動操作和替代方案。
+
+第三是治理：資料要最小化、在地優先；即使是公共服務，也只能使用依法授權、而且必要的資料。
+
+回到一開始的問題：你家裡有多少東西連著網路？我們希望今天之後，大家除了想到「方便」，也會多想一步：「誰在使用這些資料？」
+
+所以我們的結論是：科技走進家，但人仍然是主角。好的智慧住宅，要讓人看得懂、管得到，也關得掉。
+
+以上是我們的報告，謝謝大家，歡迎提問。` }
+];
+
+/* =====================================================================
+   DOM 與狀態
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag'), hotLayer=$('#hotspots');
+const notes=$('.notes'), notesBtn=$('#notesBtn');
+const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
+const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isNarrow=()=>innerWidth<=820;
+let slideIdx=0, stepIdx=0, ready=false;
+$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
+
+/* 進度軌 */
+const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
+
+/* =====================================================================
+   資訊卡渲染
+   ===================================================================== */
+function titleHTML(t){return t.split('<br>').map((l,i)=>`<span class="ln"><span style="--i:${i}">${l}</span></span>`).join('')}
+function diagramHTML(d){
+  if(!d)return'';
+  if(d.type==='flow')return`<div class="flowrow" style="--n:${d.items.length}">${d.items.map((n,i)=>`<div class="node anim" style="--i:${i}"><div class="bar"></div>${i<d.items.length-1?'<span class="arrow">→</span>':''}<div class="k">${n.k}</div><h4>${n.h}</h4><p>${n.p}</p></div>`).join('')}</div>`;
+  return`<div class="cols" style="--n:${d.items.length}">${d.items.map((c,i)=>`<div class="col anim ${c.cls||''}" style="--i:${i}"><div class="k">${c.k}</div><h4>${c.h}</h4><ul>${c.li.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>`;
+}
+function renderCard(s){
+  const n=SLIDES.indexOf(s)+1;
+  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const dek=`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`;
+  const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
+  const facts=s.facts?`<ul class="facts part" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
+  const diagram=s.diagram?`<div class="diagram part" data-part="diagram">${diagramHTML(s.diagram)}</div>`:'';
+  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
+  const sources=s.sources?`<div class="sources anim" style="--i:7">${s.sources.map(([l,u])=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${l}</a>`).join('')}</div>`:'';
+  card.innerHTML=`<div class="card-grid"><div>${head}${dek}${chips}</div><div>${diagram}</div></div>${facts}${hint}${sources}`;
+}
+function applyStep(s,step,animateParts){
+  const st=s.steps[step];
+  card.dataset.layout=st.layout;
+  card.querySelectorAll('.part').forEach(p=>{
+    const on=st.parts.includes(p.dataset.part), wasHidden=p.hidden;
+    p.hidden=!on;
+    if(on&&wasHidden&&animateParts){p.classList.remove('reveal');void p.offsetWidth;p.classList.add('reveal')}
+  });
+  // 只有一欄內容時不使用雙欄格線
+  const grid=card.querySelector('.card-grid');
+  grid.style.display=(st.layout==='bottom'&&st.parts.includes('diagram'))?'':'block';
+}
+
+let swapTimer=0;
+function go(i,step=0,instant=false){
+  i=Math.max(0,Math.min(SLIDES.length-1,i));
+  const s=SLIDES[i], changed=i!==slideIdx||!card.innerHTML;
+  slideIdx=i;stepIdx=Math.max(0,Math.min(s.steps.length-1,step));
+  if(changed){
+    card.classList.add('leaving');card.classList.remove('in');
+    clearTimeout(swapTimer);
+    swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0},instant?0:420);
+  }else applyStep(s,stepIdx,true);
+  document.body.dataset.sky=s.sky;
+  $('#cur').textContent=String(i+1).padStart(2,'0');
+  segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
+  history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
+  updateNotes();
+  if(ready)setShot(s,stepIdx,changed);
+}
+function next(){const s=SLIDES[slideIdx];if(stepIdx<s.steps.length-1)go(slideIdx,stepIdx+1);else if(slideIdx<SLIDES.length-1)go(slideIdx+1,0)}
+function prev(){if(stepIdx>0)go(slideIdx,stepIdx-1);else if(slideIdx>0)go(slideIdx-1,SLIDES[slideIdx-1].steps.length-1)}
+
+/* 講稿面板與計時器 */
+const t0=performance.now();
+function updateNotes(){
+  const s=SLIDES[slideIdx];
+  $('#notesIdx').textContent=`${String(slideIdx+1).padStart(2,'0')} / ${String(SLIDES.length).padStart(2,'0')}　步驟 ${stepIdx+1}/${s.steps.length}`;
+  $('#notesTitle').textContent=s.title.replace(/<[^>]+>/g,'');
+  $('#notesBody').textContent=s.notes;
+  const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
+}
+setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
+function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
+notesBtn.onclick=toggleNotes;
+$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+$('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
+
+/* 鍵盤、滾輪、觸控 */
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
+  else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+});
+let wheelAcc=0,wheelLock=0;
+addEventListener('wheel',e=>{
+  if(e.target.closest('.notes .body'))return;
+  if(e.target.closest('.card')&&((e.deltaY>0&&card.scrollTop+card.clientHeight<card.scrollHeight-2)||(e.deltaY<0&&card.scrollTop>0)))return;
+  e.preventDefault();const now=performance.now();if(now<wheelLock)return;
+  wheelAcc+=e.deltaY;if(Math.abs(wheelAcc)>40){wheelAcc>0?next():prev();wheelAcc=0;wheelLock=now+900}
+},{passive:false});
+let touchY=null;
+addEventListener('touchstart',e=>{touchY=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{if(touchY==null)return;const d=touchY-e.changedTouches[0].clientY;if(Math.abs(d)>50)d>0?next():prev();touchY=null},{passive:true});
+$('#world').addEventListener('click',()=>{if(!isNarrow())next()});
+
+/* =====================================================================
+   three.js 場景
+   ===================================================================== */
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const canvas=$('#world');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,logarithmicDepthBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.2,2000);
+
+scene.add(new THREE.HemisphereLight(0xfdfbf5,0xb9c4bc,1.1));
+const sun=new THREE.DirectionalLight(0xfff1dc,2.6);sun.position.set(16,26,18);sun.castShadow=true;
+Object.assign(sun.shadow.camera,{left:-20,right:20,top:20,bottom:-20,near:1,far:80});sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0004;sun.shadow.normalBias=.03;sun.shadow.radius=4;
+scene.add(sun,sun.target);
+
+/* 地面：中心實、邊緣漸隱，融入背景 */
+function radialTexture(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d'),r=g.createRadialGradient(128,128,10,128,128,128);r.addColorStop(0,'#fff');r.addColorStop(.55,'#fff');r.addColorStop(1,'#000');g.fillStyle=r;g.fillRect(0,0,256,256);const t=new THREE.CanvasTexture(c);return t}
+const ground=new THREE.Mesh(new THREE.CircleGeometry(260,96),new THREE.MeshStandardMaterial({color:'#e6e2d6',roughness:1,transparent:true,alphaMap:radialTexture(),depthWrite:false}));
+ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
+
+/* 5G 基地台（程式產生的簡化模型） */
+const TOWER=V(-62,0,-74);
+const tower=new THREE.Group();tower.position.copy(TOWER);
+{const m=new THREE.MeshStandardMaterial({color:'#b9bfc2',metalness:.7,roughness:.35}),w=new THREE.MeshStandardMaterial({color:'#f2f1ec',roughness:.5});
+ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.35,.6,22,16),m);pole.position.y=11;tower.add(pole);
+ for(let k=0;k<3;k++){const a=k*Math.PI*2/3,p=new THREE.Mesh(new THREE.BoxGeometry(.9,3,.3),w);p.position.set(Math.cos(a)*1.1,20.5,Math.sin(a)*1.1);p.rotation.y=-a+Math.PI/2;tower.add(p)}
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(1.2,.08,8,32),m);ring.rotation.x=Math.PI/2;ring.position.y=19;tower.add(ring);
+ tower.traverse(o=>{if(o.isMesh)o.castShadow=true});}
+scene.add(tower);
+
+/* 地政：沿用原版特效——地面紅點逐一亮起，住宅位置以大紅點與光環標示（land 頁使用） */
+const landDots=[];
+{const red=new THREE.MeshBasicMaterial({color:'#c83231',transparent:true,opacity:0});
+ for(let i=0;i<81;i++){
+  const x=-80+(i%9)*20+(Math.random()-.5)*7,z=-80+Math.floor(i/9)*20+(Math.random()-.5)*7;
+  if(Math.hypot(x,z)<=13)continue;
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(2,16,12),red.clone());
+  dot.position.set(x,.18,z);dot.scale.setScalar(.02);dot.visible=false;scene.add(dot);landDots.push(dot);
+ }}
+const homePin=new THREE.Mesh(new THREE.SphereGeometry(6,24,18),new THREE.MeshBasicMaterial({color:'#d62828',transparent:true,opacity:0}));
+homePin.position.set(0,7,0);homePin.visible=false;scene.add(homePin);
+const homeHalo=new THREE.Mesh(new THREE.TorusGeometry(11,.8,10,64),new THREE.MeshBasicMaterial({color:'#d62828',transparent:true,opacity:0}));
+homeHalo.rotation.x=-Math.PI/2;homeHalo.position.set(0,.24,0);homeHalo.visible=false;scene.add(homeHalo);
+let landStart=0;
+
+/* 資料邊界罩（privacy 頁使用） */
+const dome=new THREE.Group();
+{const g=new THREE.SphereGeometry(15,48,20,0,Math.PI*2,0,Math.PI/2);
+ dome.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:'#2c7a6d',transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide})));
+ dome.add(new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.SphereGeometry(15,24,8,0,Math.PI*2,0,Math.PI/2)),new THREE.LineBasicMaterial({color:'#2c7a6d',transparent:true,opacity:0})));
+ dome.position.set(0,.1,0);dome.scale.setScalar(.001);}
+scene.add(dome);
+
+/* 資料流：沿弧線移動的光點 */
+class Flow{
+  constructor(a,b,color,lift,size=.09,count=7){
+    const mid=a.clone().add(b).multiplyScalar(.5);mid.y+=lift;
+    this.curve=new THREE.QuadraticBezierCurve3(a,mid,b);
+    const len=this.curve.getLength();
+    this.tube=new THREE.Mesh(new THREE.TubeGeometry(this.curve,64,size*.22,6),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false}));
+    this.dots=[...Array(count)].map(()=>new THREE.Mesh(new THREE.SphereGeometry(size,12,10),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false})));
+    this.speed=Math.min(.5,6/len);this.a=0;
+    scene.add(this.tube,...this.dots);
+  }
+  update(t,on){
+    this.a+=((on?1:0)-this.a)*(still?1:.06);const vis=this.a>.01;
+    this.tube.visible=vis;this.tube.material.opacity=.28*this.a;
+    this.dots.forEach((d,i)=>{d.visible=vis;if(!vis)return;const u=(t*this.speed+i/this.dots.length)%1;this.curve.getPointAt(u,d.position);d.material.opacity=this.a*Math.sin(u*Math.PI);d.scale.setScalar(.6+.6*Math.sin(u*Math.PI))});
+  }
+}
+
+/* =====================================================================
+   載入模型
+   ===================================================================== */
+const SAT=V(26,64,-46);
+let house=null,satellite=null;const cutaway=[];const flows={};const named={};
+const P=name=>named[name]?.clone()??V(0,5,0);
+const DEVICES=[['生物識別門鎖','門鎖','lock'],['智慧開關','智慧開關','switch'],['一樓｜智慧電表','智慧電表','meter'],['一樓｜家庭閘道器','閘道器','gateway'],['二樓｜空氣品質感測器','空氣感測','sensor'],['三樓｜家庭邊緣運算主機','邊緣運算','edge'],['屋頂｜太陽能板','太陽能','solar']];
+const hotEls=DEVICES.map(([name,label,id],i)=>{const b=document.createElement('button');b.className='hot';b.innerHTML=`<i>${i+1}</i>${label}`;b.onclick=e=>{e.stopPropagation();go(SLIDES.findIndex(s=>s.id===id),0)};hotLayer.append(b);return b});
+
+const manager=new THREE.LoadingManager();
+manager.onProgress=(u,l,t)=>{const p=Math.round(l/t*100);$('.loader-bar i').style.width=p+'%';$('#loadPct').textContent=`LOADING 3D SCENE · ${p}%`};
+const loader=new GLTFLoader(manager);
+Promise.all([loader.loadAsync('assets/models/智慧住宅.glb'),loader.loadAsync('assets/models/通訊衛星.glb')]).then(([h,s])=>{
+  house=h.scene;scene.add(house);
+  house.traverse(o=>{
+    if(!o.isMesh)return;
+    o.castShadow=!o.material.transparent;o.receiveShadow=true;
+    if(o.material.transparent){o.material.depthWrite=false}
+    o.material.envMapIntensity=.55;
+    if(o.userData.cutaway){o.material=o.material.clone();o.userData.base=o.material.opacity;o.userData.wasTransparent=o.material.transparent;cutaway.push(o)}
+  });
+  house.updateMatrixWorld(true);
+  for(const [name] of DEVICES){const o=house.getObjectByName(name);if(o){const b=new THREE.Box3().setFromObject(o);named[name]=b.getCenter(new THREE.Vector3())}}
+  for(const extra of ['二樓｜室內空調機','三樓｜家用儲能電池','屋頂｜逆變器']){const o=house.getObjectByName(extra);if(o)named[extra]=new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3())}
+  satellite=s.scene;satellite.position.copy(SAT);satellite.scale.setScalar(2.4);satellite.rotation.set(.1,.6,-.05);scene.add(satellite);
+  satellite.traverse(o=>{if(o.isMesh)o.material.envMapIntensity=1.1});
+  buildFlows();
+  ready=true;
+  setShot(SLIDES[slideIdx],stepIdx,true,true);
+  $('.loader').classList.add('done');
+}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請雙擊資料夾內的「開啟智慧住宅導覽.bat」以本機伺服器開啟，並確認網路可連至 Three.js CDN。<br><small>'+e.message+'</small>';el.classList.add('show')});
+
+function buildFlows(){
+  const roofTop=V(0,10.6,0), towerTop=TOWER.clone().add(V(0,20.5,0)), satDish=SAT.clone().add(V(0,-4,0));
+  const teal='#2c9d89', amber='#e08a2e', blue='#4a8fe0';
+  flows.network=[new Flow(satDish,roofTop,blue,6,.35,9),new Flow(towerTop,roofTop,teal,8,.28,9),new Flow(satDish,towerTop,blue,4,.35,9)];
+  const gw=P('一樓｜家庭閘道器');
+  flows.gateway=['生物識別門鎖','智慧開關','一樓｜智慧電表'].map(n=>new Flow(P(n),gw,teal,.9,.035,5));
+  flows.sensor=[new Flow(P('二樓｜空氣品質感測器'),P('二樓｜室內空調機'),teal,.9,.04,6)];
+  flows.edge=[new Flow(gw,P('三樓｜家庭邊緣運算主機'),teal,1.5,.05,6)];
+  flows.solar=[new Flow(P('屋頂｜太陽能板'),P('三樓｜家用儲能電池'),amber,1.5,.07,7),new Flow(P('三樓｜家用儲能電池'),P('一樓｜智慧電表'),amber,1.2,.06,7)];
+  flows.privacy=[new Flow(P('二樓｜空氣品質感測器'),P('三樓｜家庭邊緣運算主機'),teal,2,.12,6),new Flow(P('生物識別門鎖'),P('三樓｜家庭邊緣運算主機'),teal,3,.12,6),new Flow(P('一樓｜智慧電表'),V(-26,40,-30),amber,6,.16,8)];
+  flows.land=[new Flow(satDish,V(0,1,0),blue,0,.6,10)];
+}
+
+/* =====================================================================
+   鏡頭：每頁一個鏡位，換頁時沿弧線補間
+   ===================================================================== */
+function shotFor(s,step){
+  const f=s.focus?P(s.focus):null;
+  switch(s.id){
+    case'cover':return{pos:SAT.clone().add(V(17,3,23)),tgt:SAT.clone().add(V(0,-1.5,0))};
+    case'network':return step?{pos:V(60,46,178),tgt:V(-16,31,-40)}:{pos:V(40,32,98),tgt:V(-16,28,-40)};
+    case'system':return step?{pos:V(19,10,38),tgt:V(0,5,0)}:{pos:V(17,9.5,23),tgt:V(0,5,0)};
+    case'lock':return{pos:f.clone().add(V(-1.3,.4,3.8+(step?-.5:0))),tgt:f.clone().add(V(0,.1,0))};
+    case'switch':return{pos:f.clone().add(V(1.3,.4,3.8+(step?-.5:0))),tgt:f.clone().add(V(0,.1,0))};
+    case'meter':return{pos:f.clone().add(V(1.8,-.15,7.6+(step?-1:0))),tgt:f.clone().add(V(.3,0,0))};
+    case'gateway':return{pos:f.clone().add(V(1.8,1.3,6.6+(step?-1:0))),tgt:f.clone().add(V(0,.5,0))};
+    case'sensor':return step?{pos:f.clone().add(V(-2.2,.9,9.6)),tgt:f.clone().add(V(-2.2,-.9,0))}:{pos:f.clone().add(V(-1.2,.2,7.0)),tgt:f.clone().add(V(-.3,-.2,0))};
+    case'edge':return{pos:f.clone().add(V(2.0,.5,7.2+(step?-1:0))),tgt:f.clone().add(V(.4,-.1,0))};
+    case'solar':return{pos:f.clone().add(V(7,6.5,9.5)),tgt:f.clone().add(V(0,-1.2,0))};
+    case'privacy':return step?{pos:V(-34,30,50),tgt:V(0,3,0)}:{pos:V(-24,15,28),tgt:V(0,5,0)};
+    case'land':return step?{pos:V(0,150,130),tgt:V(0,0,-10)}:{pos:V(0,200,70),tgt:V(0,0,0)};
+    case'closing':return{pos:V(24,12,30),tgt:V(0,5,0),orbit:true};
+  }
+}
+/* 依資訊卡位置把主體推到另一側（setViewOffset） */
+function offsetFor(layout){if(isNarrow())return{x:0,y:.2};return layout==='left'||layout==='hero'?{x:-.17,y:0}:layout==='right'?{x:.17,y:0}:layout==='bottom'?{x:0,y:.2}:{x:0,y:0}}
+const cam={from:V(0,0,0),fromT:V(0,0,0),to:V(0,0,0),toT:V(0,0,0),tgt:V(0,0,0),start:0,dur:1,lift:0,orbit:false,off:{x:0,y:0},offNow:{x:0,y:0}};
+function setShot(s,step,slideChanged,instant=false){
+  const sh=shotFor(s,step);
+  cam.from.copy(camera.position);cam.fromT.copy(cam.tgt);
+  cam.to.copy(sh.pos);cam.toT.copy(sh.tgt);cam.orbit=!!sh.orbit;
+  const dist=cam.from.distanceTo(cam.to);
+  cam.dur=instant||reduced?1:THREE.MathUtils.clamp(900+dist*14,1200,2600);
+  cam.lift=dist>40?Math.min(60,dist*.25):dist*.15;
+  cam.start=performance.now();
+  if(s.id==='land'&&(slideChanged||!landStart))landStart=cam.start+(instant?0:cam.dur*.6);
+  cam.off=offsetFor(s.steps[step].layout);
+  if(instant){camera.position.copy(sh.pos);cam.tgt.copy(sh.tgt);cam.offNow={...cam.off}}
+}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* =====================================================================
+   每一幀
+   ===================================================================== */
+const tmp=new THREE.Vector3(), clock=new THREE.Clock();
+function project(v){tmp.copy(v).project(camera);return{x:(tmp.x*.5+.5)*innerWidth,y:(-tmp.y*.5+.5)*innerHeight,ok:tmp.z>-1&&tmp.z<1}}
+function frame(){
+  requestAnimationFrame(frame);
+  const t=clock.getElapsedTime(), now=performance.now();
+  if(!ready){renderer.render(scene,camera);return}
+  const s=SLIDES[slideIdx];
+
+  // 鏡頭補間（二次貝茲弧線）＋待機微晃
+  const k=Math.min(1,(now-cam.start)/cam.dur), e=ease(k);
+  const mid=cam.from.clone().lerp(cam.to,.5);mid.y+=cam.lift;
+  const p=cam.from.clone().multiplyScalar((1-e)**2).add(mid.multiplyScalar(2*(1-e)*e)).add(cam.to.clone().multiplyScalar(e*e));
+  cam.tgt.lerpVectors(cam.fromT,cam.toT,e);
+  if(cam.orbit&&k>=1){const r=Math.hypot(cam.to.x,cam.to.z),a0=Math.atan2(cam.to.z,cam.to.x),a=a0+(now-cam.start-cam.dur)*.00004;p.set(Math.cos(a)*r,cam.to.y,Math.sin(a)*r)}
+  const sway=reduced?0:Math.min(1,k)*(s.focus?.04:.25);
+  p.x+=Math.sin(t*.31)*sway;p.y+=Math.sin(t*.23)*sway*.5;
+  camera.position.copy(p);camera.lookAt(cam.tgt);
+  const ok=still?1:.05;cam.offNow.x+=(cam.off.x-cam.offNow.x)*ok;cam.offNow.y+=(cam.off.y-cam.offNow.y)*ok;
+  camera.setViewOffset(innerWidth,innerHeight,cam.offNow.x*innerWidth,cam.offNow.y*innerHeight,innerWidth,innerHeight);
+
+  // 樓層特寫時淡化該層立面
+  for(const o of cutaway){
+    const target=s.floor===o.userData.cutaway?.04:o.userData.base;
+    const m=o.material;m.opacity+=(target-m.opacity)*(still?1:.08);
+    const tr=m.opacity<.98||o.userData.wasTransparent;
+    if(m.transparent!==tr){m.transparent=tr;m.depthWrite=!tr;m.needsUpdate=true}
+  }
+
+  // 衛星緩慢自轉
+  if(satellite){satellite.rotation.y=.6+Math.sin(t*.15)*.25;satellite.position.y=SAT.y+Math.sin(t*.5)*.4}
+
+  // 資料流
+  for(const [id,list] of Object.entries(flows)){const on=s.id===id&&(id!=='land'||stepIdx>=0);list.forEach(f=>f.update(t,on))}
+
+  // 地政土地格
+  // 地政紅點：每 52ms 亮起一顆，380ms 內由小放大
+  const landOn=s.id==='land';
+  if(!landOn)landStart=0;
+  const elapsed=still?1e5:Math.max(0,now-landStart);
+  landDots.forEach((dot,j)=>{const k2=landOn?THREE.MathUtils.clamp((elapsed-j*52)/380,0,1):0;dot.visible=k2>0;dot.material.opacity=.9*k2;dot.scale.setScalar(.02+.98*k2)});
+  const pulse=Math.sin(now*.005);
+  homePin.visible=homeHalo.visible=landOn;
+  if(landOn){homePin.material.opacity=.98;homePin.scale.setScalar(1+.08*pulse);homeHalo.material.opacity=.7;homeHalo.scale.setScalar(1+.12*pulse)}
+
+  // 資料邊界罩
+  const domeOn=s.id==='privacy'?1:0;dome.userData.a=(dome.userData.a??0)+(domeOn-(dome.userData.a??0))*.06;
+  const da=dome.userData.a;dome.scale.setScalar(Math.max(.001,.6+.4*da));dome.children[0].material.opacity=.07*da;dome.children[1].material.opacity=.22*da;dome.visible=da>.01;dome.rotation.y=t*.05;
+
+  // 指引線與標籤（鏡頭到位後才出現）
+  if(s.focus&&k>.92&&!isNarrow()){
+    const sp=project(P(s.focus)),r=card.getBoundingClientRect();
+    if(sp.ok){
+      const leftSide=sp.x>r.right, ax=leftSide?r.right:r.left, ay=THREE.MathUtils.clamp(sp.y,r.top+40,r.bottom-40);
+      const cx=(ax+sp.x)/2;
+      leaderPath.setAttribute('d',`M${ax},${ay} C${cx},${ay} ${cx},${sp.y} ${sp.x},${sp.y}`);
+      leaderDot.setAttribute('cx',sp.x);leaderDot.setAttribute('cy',sp.y);leaderRing.setAttribute('cx',sp.x);leaderRing.setAttribute('cy',sp.y);
+      leader.classList.add('show');
+      tag.textContent=s.tagText;tag.style.transform=`translate(${sp.x+(leftSide?18:-18-tag.offsetWidth)}px,${sp.y-44}px)`;tag.classList.add('show');
+    }else{leader.classList.remove('show');tag.classList.remove('show')}
+  }else{leader.classList.remove('show');tag.classList.remove('show')}
+
+  // 系統總覽的設備熱點
+  const hotOn=s.hotspots&&stepIdx===0&&k>.85;
+  DEVICES.forEach(([name],i)=>{const el=hotEls[i];if(!hotOn){el.classList.remove('show');return}const sp=project(P(name));el.style.left=sp.x+'px';el.style.top=sp.y+'px';el.classList.toggle('show',sp.ok)});
+
+  renderer.render(scene,camera);
+}
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);if(ready)cam.off=offsetFor(SLIDES[slideIdx].steps[stepIdx].layout)});
+
+/* 啟動：支援網址 #頁碼 */
+const [hashSlide,hashStep]=location.hash.slice(1).split('.');
+const startAt=Math.max(0,Math.min(SLIDES.length-1,(parseInt(hashSlide)||1)-1));
+go(startAt,(parseInt(hashStep)||1)-1,true);
+camera.position.copy(SAT.clone().add(V(17,3,23)));cam.tgt.copy(SAT);
+frame();
+</script>
+</body>
+</html>

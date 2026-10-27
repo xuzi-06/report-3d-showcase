@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060a14">
+<title>科技與未來城市｜3D 互動簡報</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --paper:#060a14;--ink:#eaf2ff;--text2:#b6c2d9;--muted:#7f8ba6;--line:rgba(170,205,255,.14);
+  --accent:#35e3ff;--accent-soft:rgba(53,227,255,.14);--magenta:#ff4fae;--amber:#ffb347;--amber-soft:rgba(255,179,71,.13);
+  --card:rgba(9,15,31,.72);--mono:'DM Mono',ui-monospace,monospace;
+  --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;
+  --gutter:clamp(18px,4.6vw,72px);--ease:cubic-bezier(.65,0,.2,1);--spring:cubic-bezier(.2,.9,.25,1.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
+/* 掃描線與暗角，增加螢幕質感 */
+.scan{position:fixed;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px),radial-gradient(120% 90% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+/* ---------- 載入畫面 ---------- */
+.loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:var(--paper);transition:opacity .9s var(--ease),visibility .9s}
+.loader.done{opacity:0;visibility:hidden}
+.loader-inner{text-align:center}
+.loader b{display:block;font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-.04em}
+.loader b em{font-style:normal;color:var(--accent);text-shadow:0 0 18px rgba(53,227,255,.6)}
+.loader-bar{width:min(260px,60vw);height:2px;margin:22px auto 10px;background:var(--line);overflow:hidden;border-radius:2px}
+.loader-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--magenta));transition:width .3s}
+.loader small{font:11px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.load-error{display:none;max-width:520px;margin:18px auto 0;padding:12px 16px;background:rgba(255,179,71,.1);color:#ffd9a8;border:1px solid rgba(255,179,71,.4);border-radius:10px;font-size:13px;line-height:1.7;text-align:left}
+.load-error.show{display:block}
+
+/* ---------- 頂部列 ---------- */
+.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite}
+.tools{display:flex;gap:8px;pointer-events:auto}
+.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:rgba(10,18,36,.7);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
+.tool:hover{border-color:rgba(53,227,255,.55);background:rgba(53,227,255,.1)}
+.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
+.tool[aria-pressed="true"]{background:var(--accent);color:#03111a;border-color:var(--accent)}
+.tool[aria-pressed="true"] kbd{background:rgba(0,0,0,.18)}
+.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
+.counter b{font-weight:500;color:var(--ink)}
+.counter span{color:var(--muted)}
+
+/* ---------- 資訊卡 ---------- */
+.card{
+  position:fixed;z-index:10;width:var(--w);left:var(--l);top:var(--t);
+  transform:translate(0,var(--ty));
+  max-height:calc(100svh - 150px);overflow:auto;scrollbar-width:none;
+  padding:clamp(20px,2.4vw,34px);border-radius:22px;
+  background:var(--card);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid rgba(120,200,255,.16);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.7),0 0 0 1px rgba(53,227,255,.04) inset;
+  transition:left 1s var(--ease),top 1s var(--ease),width 1s var(--ease),transform 1s var(--ease),opacity .45s,filter .45s;
+}
+.card::-webkit-scrollbar{display:none}
+.card[data-layout="left"]{--w:min(470px,38vw);--l:var(--gutter);--t:50%;--ty:-50%}
+.card[data-layout="right"]{--w:min(470px,38vw);--l:calc(100vw - var(--gutter) - var(--w));--t:50%;--ty:-50%}
+.card[data-layout="hero"]{--w:min(620px,48vw);--l:var(--gutter);--t:52%;--ty:-50%}
+.card[data-layout="bottom"]{--w:min(1080px,calc(100vw - 2 * var(--gutter)));--l:calc(50vw - var(--w) / 2);--t:calc(100svh - 74px);--ty:-100%}
+.card.leaving{opacity:0;filter:blur(8px)}
+.card::before{content:"";position:absolute;left:0;top:28px;width:3px;height:42px;border-radius:0 3px 3px 0;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+/* 流光：沿卡片上緣掃過的一道光 */
+.card::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent 0%,transparent 35%,var(--accent) 50%,var(--magenta) 58%,transparent 70%,transparent 100%);background-size:260% 100%;animation:sheen 5s linear infinite;opacity:.85}
+.card[data-layout="bottom"] .card-grid{display:grid;grid-template-columns:minmax(240px,.8fr) 1.6fr;gap:28px;align-items:start}
+.card[data-layout="bottom"] .title{font-size:clamp(28px,2.8vw,40px)}
+.card[data-layout="bottom"] .dek{font-size:14px}
+.card[data-layout="bottom"] .facts{display:none}
+
+.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.title{font-size:clamp(34px,4vw,60px);line-height:1.12;letter-spacing:-.045em;font-weight:900;margin:16px 0 14px}
+.card[data-layout="hero"] .title{font-size:clamp(48px,6.4vw,96px);margin:20px 0 18px}
+.title em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--magenta),var(--accent));background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite;padding:0 .04em;filter:drop-shadow(0 0 14px rgba(53,227,255,.35))}
+.title .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+.title .ln>span{display:inline-block}
+.dek{font-size:clamp(14px,1.15vw,16.5px);line-height:1.9;color:var(--text2);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font:11px var(--mono);letter-spacing:.06em;padding:5px 11px;border-radius:999px;border:1px solid rgba(53,227,255,.3);background:rgba(53,227,255,.06);color:#cdefff}
+.facts{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:4px;counter-reset:f}
+.facts li{counter-increment:f;display:grid;grid-template-columns:30px 1fr;gap:8px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.75;color:var(--text2)}
+.facts li::before{content:counter(f,decimal-leading-zero);font:11px var(--mono);color:var(--accent);padding-top:3px}
+.facts b{color:var(--ink)}
+.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
+.sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.5}
+.sources::before{content:"參考資料";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
+.sources a{text-decoration:none;border-bottom:1px solid rgba(53,227,255,.35)}
+.sources a:hover{border-bottom-color:var(--accent)}
+
+/* 進場動畫：.anim 元素依 --i 依序出現 */
+.anim{opacity:0;transform:translateY(16px)}
+.card.in .anim{animation:rise .8s var(--spring) forwards;animation-delay:calc(var(--i,0) * 70ms + 120ms)}
+.title .ln>span{transform:translateY(105%)}
+.card.in .title .ln>span{animation:lineUp .9s var(--ease) forwards;animation-delay:calc(var(--i,0) * 90ms + 80ms)}
+.part[hidden]{display:none!important}
+.part.reveal .anim{animation:rise .7s var(--spring) both;animation-delay:calc(var(--i,0) * 90ms)}
+
+/* ---------- 圖解 ---------- */
+.diagram{margin-top:4px}
+.flowrow{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:0;position:relative}
+.node{position:relative;padding:14px 16px 14px 0}
+.node .k{font:10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.node h4{margin:6px 0 6px;font-size:18px;letter-spacing:-.02em}
+.node p{margin:0;font-size:12.5px;line-height:1.7;color:var(--text2)}
+.node .bar{height:3px;border-radius:3px;background:var(--line);margin-bottom:12px;overflow:hidden;position:relative}
+.node .bar::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--accent),var(--magenta));transform:scaleX(0);transform-origin:left}
+.part.reveal .node .bar::after,.card.in .node .bar::after{animation:fill .7s var(--ease) forwards;animation-delay:calc(var(--i,0) * 160ms + 300ms)}
+.node .arrow{position:absolute;right:6px;top:-3px;font:12px var(--mono);color:var(--accent)}
+.cols{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:12px}
+.col{padding:16px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.col.now{background:var(--accent-soft);border-color:rgba(53,227,255,.25)}
+.col.warn{background:var(--amber-soft);border-color:rgba(255,179,71,.25)}
+.col .k{font:10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.col.warn .k{color:var(--amber)}
+.col h4{margin:6px 0 8px;font-size:17px;letter-spacing:-.02em}
+.col ul{margin:0;padding-left:1.1em;font-size:12.5px;line-height:1.75;color:var(--text2)}
+
+/* ---------- 指引線、標籤、熱點 ---------- */
+#leader{position:fixed;inset:0;z-index:8;pointer-events:none;width:100%;height:100%;opacity:0;transition:opacity .5s}
+#leader.show{opacity:1}
+#leader path{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 5;animation:dash 1.2s linear infinite;filter:drop-shadow(0 0 4px var(--accent))}
+#leader .dot{fill:var(--accent)}
+#leader .ring{fill:none;stroke:var(--accent);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:ring 1.8s ease-out infinite}
+.tag{position:fixed;z-index:9;left:0;top:0;pointer-events:none;padding:5px 10px;border-radius:999px;background:var(--accent);color:#03111a;font:11px var(--mono);font-weight:500;letter-spacing:.06em;white-space:nowrap;opacity:0;transition:opacity .4s;box-shadow:0 0 18px rgba(53,227,255,.45)}
+.tag.show{opacity:1}
+#hotspots{position:fixed;inset:0;z-index:9;pointer-events:none}
+.hot{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:8px;padding:4px 11px 4px 4px;border:1px solid rgba(53,227,255,.35);border-radius:999px;background:rgba(8,14,30,.85);box-shadow:0 8px 24px -8px rgba(0,0,0,.6);font-size:12px;font-weight:700;cursor:pointer;opacity:0;transform:translate(-14px,-50%) scale(.8);transition:opacity .4s,transform .5s var(--spring),background .2s}
+.hot.show{opacity:1;transform:translate(-14px,-50%) scale(1)}
+.hot:hover{background:var(--accent);color:#03111a}
+.hot i{width:20px;height:20px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#03111a;font:10px var(--mono);font-style:normal;box-shadow:0 0 0 0 rgba(53,227,255,.5);animation:halo 2s infinite}
+
+/* ---------- 進度軌 ---------- */
+.rail{position:fixed;z-index:20;left:var(--gutter);right:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;gap:6px;align-items:flex-end}
+.seg{flex:1;height:22px;border:0;padding:0;background:none;cursor:pointer;position:relative}
+.seg::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:3px;background:rgba(170,205,255,.16);transition:background .3s,height .3s}
+.seg i{position:absolute;left:0;bottom:0;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--magenta));width:0;transition:width .7s var(--ease);box-shadow:0 0 8px rgba(53,227,255,.5)}
+.seg.done i{width:100%}
+.seg:hover::before{height:5px}
+.seg span{position:absolute;left:0;bottom:12px;font:10px var(--mono);letter-spacing:.06em;white-space:nowrap;color:var(--muted);opacity:0;transform:translateY(4px);transition:.25s}
+.seg:hover span,.seg.active span{opacity:1;transform:none}
+.seg.active span{color:var(--ink)}
+.navbtns{display:flex;gap:6px;margin-left:12px}
+.navbtns button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:rgba(10,18,36,.75);cursor:pointer;font-size:15px;transition:.2s}
+.navbtns button:hover{background:var(--accent);color:#03111a}
+
+/* ---------- 講稿面板 ---------- */
+.notes{position:fixed;z-index:30;right:12px;top:60px;bottom:64px;width:min(420px,calc(100vw - 24px));padding:22px 24px;border-radius:18px;background:rgba(4,8,18,.95);border:1px solid var(--line);color:#e9ece8;backdrop-filter:blur(12px);transform:translateX(calc(100% + 24px));transition:transform .6s var(--ease);display:flex;flex-direction:column;gap:12px}
+.notes.open{transform:none}
+.notes header{display:flex;justify-content:space-between;align-items:baseline;font:11px var(--mono);letter-spacing:.12em;color:#8fb8c9}
+.notes h3{margin:0;font-size:20px;letter-spacing:-.02em}
+.notes .body{flex:1;overflow:auto;font-size:15px;line-height:2;color:#d6e2f0;white-space:pre-line;padding-right:6px}
+.notes .body::-webkit-scrollbar{width:4px}.notes .body::-webkit-scrollbar-thumb{background:#33445e;border-radius:4px}
+.notes footer{font:11px var(--mono);color:#8395ad;border-top:1px solid #1d2a40;padding-top:10px;display:flex;justify-content:space-between;gap:10px}
+.notes .timer{color:var(--accent)}
+
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes lineUp{to{transform:none}}
+@keyframes fill{to{transform:scaleX(1)}}
+@keyframes nudge{to{transform:translateX(8px);opacity:.5}}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(53,227,255,.08),0 0 16px var(--accent)}}
+@keyframes dash{to{stroke-dashoffset:-18}}
+@keyframes ring{from{r:6;opacity:1}to{r:22;opacity:0}}
+@keyframes halo{70%{box-shadow:0 0 0 8px rgba(53,227,255,0)}100%{box-shadow:0 0 0 0 rgba(53,227,255,0)}}
+@keyframes sheen{from{background-position:130% 0}to{background-position:-130% 0}}
+@keyframes flow{to{background-position:-200% 0}}
+
+@media (max-width:820px){
+  .card,.card[data-layout]{--w:calc(100vw - 2 * var(--gutter));--l:var(--gutter);--t:calc(100svh - 70px);--ty:-100%;max-height:52svh;padding:20px}
+  .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
+  .card[data-layout="bottom"] .card-grid{grid-template-columns:1fr;gap:12px}
+  .flowrow,.cols{grid-template-columns:1fr 1fr}
+  .tool .lbl{display:none}
+  .seg span{display:none}
+  .navbtns{display:none}
+}
+html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="world" aria-label="未來城市 3D 場景"></canvas>
+<div class="scan" aria-hidden="true"></div>
+<svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
+<div class="tag" aria-hidden="true"></div>
+<div id="hotspots"></div>
+
+<header class="topbar">
+  <div class="brand"><i></i>TECH × FUTURE CITY</div>
+  <div class="tools">
+    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">10</span></span></div>
+    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
+    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
+  </div>
+</header>
+
+<article class="card" data-layout="hero" aria-live="polite"></article>
+
+<nav class="rail" aria-label="章節"><div class="navbtns"><button id="prevBtn" aria-label="上一步">←</button><button id="nextBtn" aria-label="下一步">→</button></div></nav>
+
+<aside class="notes" aria-label="講稿">
+  <header><span id="notesIdx">01 / 10</span><span class="timer" id="timer">00:00</span></header>
+  <h3 id="notesTitle"></h3>
+  <div class="body" id="notesBody"></div>
+  <footer><span id="notesNext"></span><span>← → 換頁　N 關閉</span></footer>
+</aside>
+
+<div class="loader"><div class="loader-inner"><b>科技與<em>未來城市</em></b><div class="loader-bar"><i></i></div><small id="loadPct">LOADING 3D SCENE · 0%</small><div class="load-error" role="status"></div></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* =====================================================================
+   簡報內容：每一頁的文字、步驟（版面變化）、鏡頭與講稿都在這裡
+   steps：每按一次「下一步」進入下一個 step；layout 改變時資訊卡會移動
+   ===================================================================== */
+const SLIDES = [
+{ id:'cover', label:'開場', sky:'night', eyebrow:'TECH × FUTURE CITY',
+  title:'科技與<br><em>未來城市</em>',
+  dek:'當感測器、網路、資料與綠色能源被編織進街道與建築，城市會變成一個能感知、能思考、也能自我調節的系統。',
+  chips:['數位分身','智慧交通','微電網','垂直綠化','無人機物流'], hint:true,
+  steps:[{layout:'hero',parts:['dek','chips']}],
+  notes:`各位老師、同學好，我們這組的主題是「科技與未來城市」。
+
+畫面上是我們用 Blender 建立的一座未來城市模型。中央那座有光環的高塔是城市營運中心，周圍有自駕車在跑、無人機在飛，左前方還有一座風力發電機。
+
+接下來我們會從城市面臨的問題開始，再一一走訪六個關鍵設施，最後談談一座「聰明」的城市，該怎麼對待市民的資料。` },
+
+{ id:'urban', label:'城市挑戰', sky:'night', eyebrow:'WHY SMART CITIES',
+  title:'人往城市走，<br>城市要<em>更聰明</em>',
+  dek:'聯合國估計，到 2050 年全球約 68% 的人口將住在都市地區（2018 年約為 55%）。更多人、更多車、更多用電，都在考驗城市的承載力。點選畫面上的標籤可以直接跳到該設施。',
+  diagram:{type:'cols',items:[
+    {k:'MOBILITY',cls:'now',h:'交通',li:['通勤壅塞與停車問題','事故與行人安全','物流車輛增加']},
+    {k:'ENERGY',cls:'warn',h:'能源與氣候',li:['尖峰用電壓力','減碳與再生能源併網','熱島效應']},
+    {k:'GOVERNANCE',h:'治理',li:['資料分散在不同單位','需要更即時的決策','市民對隱私的期待']}]},
+  hotspots:true,
+  steps:[{layout:'left',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
+  sources:[['UN DESA｜2018 世界都市化展望','https://www.un.org/development/desa/en/news/population/2018-revision-of-world-urbanization-prospects.html']],
+  notes:`為什麼要談智慧城市？先看一個數字：聯合國估計，到 2050 年，全球大約 68% 的人會住在都市地區；2018 年的時候大約是 55%。
+
+人越來越集中，城市的壓力也越來越大。畫面上的六個標籤，就是我們今天要介紹的六個設施，它們分別回應不同的問題。
+
+（下一步）我們把挑戰整理成三類：第一是交通，壅塞、安全和越來越多的物流車；第二是能源與氣候，尖峰用電、減碳和熱島效應；第三是治理，資料分散在不同單位，決策不夠即時，同時市民也越來越在意隱私。` },
+
+{ id:'twin', label:'營運中心', sky:'night', eyebrow:'DIGITAL TWIN', focus:'城市營運中心', tagText:'城市營運中心',
+  title:'城市營運中心<br>與<em>數位分身</em>',
+  dek:'把全市感測器的資料匯集到同一個平台，並建立一座與真實城市同步的「數位分身」，就能在虛擬世界先模擬、再到現實中行動。',
+  facts:['<b>匯流：</b>交通、能源、環境、設施狀態集中在同一個儀表板','<b>模擬：</b>在數位分身中測試號誌調整、施工封路、颱風淹水等情境','<b>限制：</b>模型只和資料一樣好；感測器故障或資料延遲，判斷就會失準'],
+  diagram:{type:'flow',items:[
+    {k:'01 SENSE',h:'感知',p:'路燈、號誌、電網與建築回傳即時資料'},
+    {k:'02 TWIN',h:'數位分身',p:'在虛擬城市中重現現況'},
+    {k:'03 SIMULATE',h:'模擬',p:'比較不同方案的結果'},
+    {k:'04 ACT',h:'行動',p:'由人員核可後下達調整，並持續回饋'}]},
+  steps:[{layout:'right',parts:['dek','facts']},{layout:'bottom',parts:['dek','diagram']}],
+  notes:`城市中央這座塔，是城市營運中心。塔頂那圈旋轉的洋紅色光環，代表它正在整合全市的資料。
+
+它做兩件事。第一是「匯流」：交通、能源、環境和公共設施的狀態，集中到同一個平台。第二是建立「數位分身」，也就是一座跟真實城市同步的虛擬城市。
+
+（下一步）現在畫面上的光點，就是各個設施把資料送回營運中心。整個流程是：感知、建立數位分身、模擬、行動。例如要調整號誌或封路施工，可以先在虛擬城市裡試，看哪個方案影響最小，再由人員核可後執行。
+
+但要記得，數位分身只和資料一樣好；感測器壞了或資料延遲，模擬就會失準。` },
+
+{ id:'pole', label:'智慧路燈', sky:'night', eyebrow:'SMART POLE', focus:'智慧路燈', tagText:'智慧路燈',
+  title:'智慧路燈<br>城市的<em>神經末梢</em>',
+  dek:'路燈遍布每一條街，本來就有電力和高度。把它升級成多功能桿，就能同時承載照明、感測與通訊。',
+  facts:['<b>照明：</b>LED 可依人車流量調整亮度，深夜無人時降低耗電','<b>感測：</b>可加裝空品、溫濕度、車流計數等感測器（琥珀色模組）','<b>通訊：</b>桿上空間可設置小型基地台，補強 5G 訊號覆蓋'],
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
+  notes:`走到街上。路邊這支路燈，看起來和一般路燈差不多，但它其實是「智慧路燈」。
+
+為什麼選路燈？因為它遍布每一條街，本身就有電力，也有高度，很適合拿來放設備。
+
+（下一步）它有三個功能：第一是照明本身，LED 可以依照人車流量調亮度，深夜沒人的時候就降低耗電；第二是感測，桿子下方琥珀色的模組可以裝空氣品質、溫濕度或車流計數的感測器；第三是通訊，桿上中段白色的圓筒代表小型基地台，可以補強 5G 的訊號覆蓋。
+
+所以一支路燈，就像城市伸出去的一個神經末梢。` },
+
+{ id:'mobility', label:'智慧交通', sky:'night', eyebrow:'MOBILITY', focus:'智慧路口號誌', tagText:'智慧路口號誌',
+  title:'自駕車與<br><em>會思考的路口</em>',
+  dek:'路口的攝影機與光達（頂端洋紅色感測器）偵測車流與行人，號誌依現況調整秒數；車輛也能與路側設備交換資訊（V2X）。',
+  facts:['<b>自駕分級：</b>SAE J3016 把駕駛自動化分為 0～5 級，多數市售車輛屬於輔助駕駛','<b>路口協作：</b>號誌把燈號與剩餘秒數傳給車輛，車輛回報位置與速度','<b>安全優先：</b>行人與自行車的偵測，比車流效率更重要'],
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
+  sources:[['SAE｜J3016 駕駛自動化分級','https://www.sae.org/blog/sae-j3016-update']],
+  notes:`再往前到十字路口。這組號誌上面除了燈號，還有攝影機，頂端洋紅色的球是光達，用來偵測車輛和行人。
+
+傳統號誌的秒數是固定的；智慧路口可以依照當下的車流調整。路上這些白色、底部有青色光帶的車，代表自駕車。
+
+（下一步）講到自駕車，常聽到「幾級自駕」。這是美國汽車工程師學會 SAE 的 J3016 標準，把駕駛自動化分成 0 到 5 級。目前大多數市售車輛，還是屬於輔助駕駛的階段。
+
+未來路口和車輛可以互相溝通，號誌告訴車還剩幾秒，車回報自己的位置和速度。但我們認為最重要的是：偵測行人和自行車，比讓車流更快更優先。` },
+
+{ id:'energy', label:'綠能微電網', sky:'night', eyebrow:'MICROGRID', focus:'儲能站', tagText:'儲能站',
+  title:'太陽、風與電池<br>組成<em>微電網</em>',
+  dek:'屋頂太陽能與風機發電，儲能站把多餘的電存起來；必要時，這個區域電網還能與主電網分離、獨立運作。',
+  facts:['<b>發電：</b>太陽能看日照、風機看風況，兩者都會波動','<b>儲能：</b>電池在離峰或發電過剩時充電、尖峰時放電，平衡供需','<b>韌性：</b>主電網故障時，微電網可「孤島運轉」，優先供電給醫院、避難所等關鍵設施'],
+  steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
+  sources:[['NLR（原 NREL）｜Microgrids','https://www.nlr.gov/grid/microgrids.html']],
+  notes:`這一區是城市的能源中心。左邊建築的屋頂鋪滿太陽能板，前方一整排白色櫃子是儲能站，遠處還有一座正在轉動的風力發電機。橘色的光點，就是電力的流向。
+
+（下一步）這三樣東西組成一個「微電網」。
+
+第一，發電：太陽能看日照，風機看風況，兩者都會波動。
+
+第二，儲能：電池在發電過剩或離峰時充電，尖峰時放電，把供需拉平。
+
+第三，也是最重要的，韌性：如果主電網因為颱風或地震故障，微電網可以和主電網分開、獨立運作，優先供電給醫院、避難所這些關鍵設施。` },
+
+{ id:'green', label:'垂直綠化', sky:'night', eyebrow:'GREEN ARCHITECTURE', focus:'垂直森林大樓', tagText:'垂直森林大樓',
+  title:'把森林<br><em>種上大樓</em>',
+  dek:'科技城市不只有鋼鐵與玻璃。陽台錯落種植的「垂直森林」，讓建築本身成為生態系的一部分。',
+  facts:['<b>實例：</b>米蘭「垂直森林」兩棟住宅塔高 110 與 76 公尺，種植約 800 棵樹與 4,500 株灌木','<b>效益：</b>遮蔭降溫、調節濕度、降低噪音，並提供鳥類與昆蟲棲地','<b>科技角色：</b>以感測器監測土壤濕度、自動灌溉，並安排定期修剪與維護'],
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
+  sources:[['Stefano Boeri Architetti｜Vertical Forest','https://www.stefanoboeriarchitetti.net/en/project/vertical-forest/']],
+  notes:`右邊這兩棟白色、陽台上長滿綠色植物的大樓，是垂直森林大樓。
+
+我們想強調：未來城市不只是鋼鐵和玻璃。
+
+（下一步）這個概念有真實案例。義大利米蘭的「垂直森林」，兩棟住宅塔分別高 110 公尺和 76 公尺，種了大約 800 棵樹和 4,500 株灌木。
+
+植物可以遮蔭降溫、調節濕度、降低噪音，也給鳥類和昆蟲棲息的空間，對熱島效應有幫助。
+
+那科技在這裡扮演什麼角色？例如用感測器監測土壤濕度、自動灌溉，讓這麼多植物在高樓上也能被照顧好。` },
+
+{ id:'drone', label:'無人機物流', sky:'night', eyebrow:'URBAN AIR LOGISTICS', focus:'無人機起降站', tagText:'無人機起降站',
+  title:'無人機物流<br>開啟<em>第三維度</em>',
+  dek:'屋頂的起降站讓無人機在建築之間運送藥品、包裹與檢修零件，把一部分配送從擁擠的地面移到空中。',
+  facts:['<b>用途：</b>緊急醫療物資、偏鄉或離島配送、設施巡檢','<b>挑戰：</b>噪音、隱私、墜落風險，以及多架無人機之間的空域管理','<b>法規：</b>台灣《民用航空法》設有遙控無人機專章，規範註冊、操作證與飛航限制'],
+  steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
+  sources:[['全國法規資料庫｜民用航空法','https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=K0090001']],
+  notes:`抬頭看。這棟大樓的屋頂有一個洋紅色的停機坪，是無人機起降站，旁邊有幾架無人機正在飛。洋紅色的光線，代表配送路線。
+
+把一部分配送移到空中，就像為城市多開了一個「第三維度」，可以減少地面的車流。
+
+（下一步）比較適合的用途包括：緊急的醫療物資、偏鄉或離島的配送，以及設施巡檢。
+
+但挑戰也不少：噪音、拍攝造成的隱私疑慮、萬一墜落的風險，以及很多架無人機同時飛的時候，空域要怎麼管理。
+
+台灣的《民用航空法》已經有遙控無人機的專章，規範註冊、操作證和飛航限制。` },
+
+{ id:'privacy', label:'資料治理', sky:'night', eyebrow:'DATA GOVERNANCE',
+  title:'聰明的城市，<br>也要<em>值得信任</em>',
+  dek:'整座城市都在產生資料。罩住城市的這層網格，代表資料治理的邊界：什麼可以收、能用在哪裡、誰來監督？',
+  diagram:{type:'cols',items:[
+    {k:'COLLECT',cls:'now',h:'蒐集',li:['只收達成目的所需的資料','能匿名就不記名','影像在設備端先去識別化']},
+    {k:'USE',cls:'warn',h:'利用',li:['依法並限於特定目的（個資法）','演算法決策要可解釋、可申訴','跨單位分享須有依據與紀錄']},
+    {k:'OPEN',h:'公開與監督',li:['非個人資料以開放資料釋出','公開感測器位置與用途','市民可查詢、提出意見']}]},
+  steps:[{layout:'left',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
+  sources:[['全國法規資料庫｜個人資料保護法','https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=I0050021']],
+  notes:`走完六個設施，我們把鏡頭拉遠。罩住整座城市的這層網格，代表資料治理的邊界。
+
+剛才每一個設施都在產生資料：路口攝影機看得到人，無人機飛過窗外，電網知道每一區的用電。城市越聰明，資料越多，所以也越需要規則。
+
+（下一步）我們分成三個面向。
+
+蒐集：只收需要的，能匿名就不記名，影像最好在設備端先去識別化。
+
+利用：依照個人資料保護法，限於特定目的；如果用演算法做決策，要能解釋，也要讓市民能申訴。
+
+公開與監督：不涉及個人的資料可以開放；感測器裝在哪裡、做什麼用，也應該公開讓市民查詢。` },
+
+{ id:'closing', label:'結語', sky:'night', eyebrow:'CONCLUSION',
+  title:'科技是工具，<br><em>人</em>才是城市',
+  dek:'未來城市的關鍵，不是最多的感測器或最快的網路，而是讓科技回應人的需要，同時保有透明與選擇。',
+  facts:['<b>感知與決策：</b>數位分身與營運中心讓城市即時反應，但最終由人核可','<b>移動與能源：</b>智慧路口、自駕車與微電網，讓城市更安全、更有韌性','<b>環境與治理：</b>垂直綠化回應氣候，資料治理守住信任'],
+  chips:['謝謝聆聽','Q & A'],
+  steps:[{layout:'left',parts:['dek','facts','chips']}],
+  notes:`最後做個總結。
+
+第一，感知與決策：城市營運中心和數位分身，讓城市可以即時反應，但最後的決定，仍然應該由人來核可。
+
+第二，移動與能源：智慧路口、自駕車和微電網，讓城市更安全，也更有韌性。
+
+第三，環境與治理：垂直綠化回應氣候變遷，資料治理則守住市民的信任。
+
+我們的結論是：科技是工具，人才是城市。以上是我們的報告，謝謝大家，歡迎提問。` }
+];
+
+/* =====================================================================
+   DOM 與狀態
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag'), hotLayer=$('#hotspots');
+const notes=$('.notes'), notesBtn=$('#notesBtn');
+const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
+const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isNarrow=()=>innerWidth<=820;
+let slideIdx=0, stepIdx=0, ready=false;
+$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
+
+/* 進度軌 */
+const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
+
+/* =====================================================================
+   資訊卡渲染
+   ===================================================================== */
+function titleHTML(t){return t.split('<br>').map((l,i)=>`<span class="ln"><span style="--i:${i}">${l}</span></span>`).join('')}
+function diagramHTML(d){
+  if(!d)return'';
+  if(d.type==='flow')return`<div class="flowrow" style="--n:${d.items.length}">${d.items.map((n,i)=>`<div class="node anim" style="--i:${i}"><div class="bar"></div>${i<d.items.length-1?'<span class="arrow">→</span>':''}<div class="k">${n.k}</div><h4>${n.h}</h4><p>${n.p}</p></div>`).join('')}</div>`;
+  return`<div class="cols" style="--n:${d.items.length}">${d.items.map((c,i)=>`<div class="col anim ${c.cls||''}" style="--i:${i}"><div class="k">${c.k}</div><h4>${c.h}</h4><ul>${c.li.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>`;
+}
+function renderCard(s){
+  const n=SLIDES.indexOf(s)+1;
+  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const dek=`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`;
+  const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
+  const facts=s.facts?`<ul class="facts part" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
+  const diagram=s.diagram?`<div class="diagram part" data-part="diagram">${diagramHTML(s.diagram)}</div>`:'';
+  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
+  const sources=s.sources?`<div class="sources anim" style="--i:7">${s.sources.map(([l,u])=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${l}</a>`).join('')}</div>`:'';
+  card.innerHTML=`<div class="card-grid"><div>${head}${dek}${chips}</div><div>${diagram}</div></div>${facts}${hint}${sources}`;
+}
+function applyStep(s,step,animateParts){
+  const st=s.steps[step];
+  card.dataset.layout=st.layout;
+  card.querySelectorAll('.part').forEach(p=>{
+    const on=st.parts.includes(p.dataset.part), wasHidden=p.hidden;
+    p.hidden=!on;
+    if(on&&wasHidden&&animateParts){p.classList.remove('reveal');void p.offsetWidth;p.classList.add('reveal')}
+  });
+  // 只有一欄內容時不使用雙欄格線
+  const grid=card.querySelector('.card-grid');
+  grid.style.display=(st.layout==='bottom'&&st.parts.includes('diagram'))?'':'block';
+}
+
+let swapTimer=0;
+function go(i,step=0,instant=false){
+  i=Math.max(0,Math.min(SLIDES.length-1,i));
+  const s=SLIDES[i], changed=i!==slideIdx||!card.innerHTML;
+  slideIdx=i;stepIdx=Math.max(0,Math.min(s.steps.length-1,step));
+  if(changed){
+    card.classList.add('leaving');card.classList.remove('in');
+    clearTimeout(swapTimer);
+    swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0},instant?0:420);
+  }else applyStep(s,stepIdx,true);
+  $('#cur').textContent=String(i+1).padStart(2,'0');
+  segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
+  history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
+  updateNotes();
+  if(ready)setShot(s,stepIdx,changed);
+}
+function next(){const s=SLIDES[slideIdx];if(stepIdx<s.steps.length-1)go(slideIdx,stepIdx+1);else if(slideIdx<SLIDES.length-1)go(slideIdx+1,0)}
+function prev(){if(stepIdx>0)go(slideIdx,stepIdx-1);else if(slideIdx>0)go(slideIdx-1,SLIDES[slideIdx-1].steps.length-1)}
+
+/* 講稿面板與計時器 */
+const t0=performance.now();
+function updateNotes(){
+  const s=SLIDES[slideIdx];
+  $('#notesIdx').textContent=`${String(slideIdx+1).padStart(2,'0')} / ${String(SLIDES.length).padStart(2,'0')}　步驟 ${stepIdx+1}/${s.steps.length}`;
+  $('#notesTitle').textContent=s.title.replace(/<[^>]+>/g,'');
+  $('#notesBody').textContent=s.notes;
+  const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
+}
+setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
+function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
+notesBtn.onclick=toggleNotes;
+$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+$('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
+
+/* 鍵盤、滾輪、觸控 */
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
+  else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+});
+let wheelAcc=0,wheelLock=0;
+addEventListener('wheel',e=>{
+  if(e.target.closest('.notes .body'))return;
+  if(e.target.closest('.card')&&((e.deltaY>0&&card.scrollTop+card.clientHeight<card.scrollHeight-2)||(e.deltaY<0&&card.scrollTop>0)))return;
+  e.preventDefault();const now=performance.now();if(now<wheelLock)return;
+  wheelAcc+=e.deltaY;if(Math.abs(wheelAcc)>40){wheelAcc>0?next():prev();wheelAcc=0;wheelLock=now+900}
+},{passive:false});
+let touchY=null;
+addEventListener('touchstart',e=>{touchY=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{if(touchY==null)return;const d=touchY-e.changedTouches[0].clientY;if(Math.abs(d)>50)d>0?next():prev();touchY=null},{passive:true});
+$('#world').addEventListener('click',()=>{if(!isNarrow())next()});
+
+/* =====================================================================
+   three.js 場景（夜間城市＋光暈後製）
+   ===================================================================== */
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const canvas=$('#world');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.85;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color('#060a14');
+scene.fog=new THREE.FogExp2('#060a14',.0042);
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.15;
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.2,2000);
+
+scene.add(new THREE.HemisphereLight(0x5a78b8,0x0a0f1e,.45));
+const moon=new THREE.DirectionalLight(0xa9c4ff,.7);moon.position.set(-40,70,30);moon.castShadow=true;
+Object.assign(moon.shadow.camera,{left:-60,right:60,top:60,bottom:-60,near:1,far:200});moon.shadow.mapSize.set(2048,2048);moon.shadow.bias=-.0004;moon.shadow.normalBias=.04;
+scene.add(moon,moon.target);
+
+/* 光暈：讓霓虹與窗光發亮 */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.6,.4,1.0);composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* 城市外圍延伸的網格，被霧氣吞沒 */
+const outerGrid=new THREE.GridHelper(600,100,0x1b6f8a,0x0e2b44);outerGrid.position.y=-.2;outerGrid.material.transparent=true;outerGrid.material.opacity=.55;scene.add(outerGrid);
+
+/* 星空 */
+{const g=new THREE.BufferGeometry(),n=900,a=new Float32Array(n*3);
+ for(let i=0;i<n;i++){const th=Math.random()*Math.PI*2,ph=Math.random()*Math.PI*.42,r=700;a.set([r*Math.sin(ph)*Math.cos(th),r*Math.cos(ph),r*Math.sin(ph)*Math.sin(th)],i*3)}
+ g.setAttribute('position',new THREE.BufferAttribute(a,3));
+ const stars=new THREE.Points(g,new THREE.PointsMaterial({color:0xbfd8ff,size:1.6,sizeAttenuation:false,fog:false,transparent:true,opacity:.7}));scene.add(stars);}
+
+/* 資料治理罩（privacy 頁使用） */
+const dome=new THREE.Group();
+{const g=new THREE.SphereGeometry(62,48,20,0,Math.PI*2,0,Math.PI/2);
+ dome.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:'#35e3ff',transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide})));
+ dome.add(new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.SphereGeometry(62,32,10,0,Math.PI*2,0,Math.PI/2)),new THREE.LineBasicMaterial({color:'#35e3ff',transparent:true,opacity:0})));
+ dome.position.set(0,.1,0);dome.scale.setScalar(.001);}
+scene.add(dome);
+
+/* 資料流：沿弧線移動的光點 */
+class Flow{
+  constructor(a,b,color,lift,size=.09,count=7){
+    const mid=a.clone().add(b).multiplyScalar(.5);mid.y+=lift;
+    this.curve=new THREE.QuadraticBezierCurve3(a,mid,b);
+    const len=this.curve.getLength();
+    this.tube=new THREE.Mesh(new THREE.TubeGeometry(this.curve,64,size*.22,6),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false}));
+    this.dots=[...Array(count)].map(()=>new THREE.Mesh(new THREE.SphereGeometry(size,12,10),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false})));
+    this.speed=Math.min(.5,6/len);this.a=0;
+    scene.add(this.tube,...this.dots);
+  }
+  update(t,on){
+    this.a+=((on?1:0)-this.a)*(still?1:.06);const vis=this.a>.01;
+    this.tube.visible=vis;this.tube.material.opacity=.35*this.a;
+    this.dots.forEach((d,i)=>{d.visible=vis;if(!vis)return;const u=(t*this.speed+i/this.dots.length)%1;this.curve.getPointAt(u,d.position);d.material.opacity=this.a*Math.sin(u*Math.PI);d.scale.setScalar(.6+.6*Math.sin(u*Math.PI))});
+  }
+}
+
+/* =====================================================================
+   載入模型
+   ===================================================================== */
+let city=null;const flows={};const named={},boxes={};
+const P=name=>named[name]?.clone()??V(0,5,0);
+const TOP=name=>boxes[name]?V(named[name].x,boxes[name].max.y,named[name].z):V(0,5,0);
+const DEVICES=[['城市營運中心','營運中心','twin'],['智慧路燈','智慧路燈','pole'],['智慧路口號誌','智慧路口','mobility'],['儲能站','微電網','energy'],['垂直森林大樓','垂直森林','green'],['無人機起降站','無人機','drone']];
+const hotEls=DEVICES.map(([name,label,id],i)=>{const b=document.createElement('button');b.className='hot';b.innerHTML=`<i>${i+1}</i>${label}`;b.onclick=e=>{e.stopPropagation();go(SLIDES.findIndex(s=>s.id===id),0)};hotLayer.append(b);return b});
+const movers={cars:[],drones:[],ring:null,blades:null};
+
+const manager=new THREE.LoadingManager();
+manager.onProgress=(u,l,t)=>{const p=Math.round(l/t*100);$('.loader-bar i').style.width=p+'%';$('#loadPct').textContent=`LOADING 3D SCENE · ${p}%`};
+const loader=new GLTFLoader(manager);
+loader.loadAsync('assets/models/未來城市.glb').then(g=>{
+  city=g.scene;scene.add(city);
+  const tuned=new Set();
+  city.traverse(o=>{
+    if(!o.isMesh)return;
+    o.castShadow=!o.material.transparent;o.receiveShadow=true;
+    const m=o.material;if(tuned.has(m))return;tuned.add(m);   // 材質是共用的，只調一次
+    if(m.transparent)m.depthWrite=false;
+    m.envMapIntensity=.6;
+    // Blender 的發光值在網頁上偏亮：窗光壓在光暈閾值以下，只讓霓虹線條發光暈
+    if(m.emissiveIntensity>0)m.emissiveIntensity=/窗光/.test(m.name)?.75:m.emissiveIntensity*.5;
+  });
+  city.updateMatrixWorld(true);
+  for(const o of city.children){const b=new THREE.Box3().setFromObject(o);boxes[o.name]=b;named[o.name]=b.getCenter(new THREE.Vector3())}
+  // 會動的物件
+  movers.ring=city.getObjectByName('營運中心_全息環');
+  movers.blades=city.getObjectByName('風機葉片');
+  city.children.filter(o=>o.name.startsWith('自駕車_')).forEach((o,i)=>{const s=boxes[o.name].getSize(new THREE.Vector3());movers.cars.push({o,axis:s.x>s.z?'x':'z',base:o.position.clone(),dir:i%2?-1:1,speed:5+i*.7})});
+  city.children.filter(o=>o.name.startsWith('無人機_')).forEach((o,i)=>movers.drones.push({o,base:o.position.clone(),i}));
+  buildFlows();
+  ready=true;
+  setShot(SLIDES[slideIdx],stepIdx,true,true);
+  $('.loader').classList.add('done');
+}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請雙擊資料夾內的「server.bat」以本機伺服器開啟，並確認網路可連至 Three.js CDN。<br><small>'+e.message+'</small>';el.classList.add('show')});
+
+function buildFlows(){
+  const cyan='#35e3ff', amber='#ffb347', mag='#ff4fae';
+  const hub=V(0,37,0);
+  flows.twin=['智慧路燈','智慧路口號誌','儲能站','無人機起降站','垂直森林大樓','太陽能光電屋頂'].map((n,i)=>new Flow(TOP(n),hub,cyan,10+i,.32,8));
+  flows.pole=[new Flow(TOP('智慧路燈'),TOP('智慧路口號誌'),cyan,4,.12,6),new Flow(TOP('智慧路燈'),hub,cyan,12,.18,8)];
+  flows.mobility=[new Flow(TOP('智慧路口號誌'),V(12,1,-4),cyan,3,.12,6),new Flow(TOP('智慧路口號誌'),V(30,1,13.2),cyan,3,.12,6),new Flow(TOP('智慧路口號誌'),hub,cyan,10,.18,8)];
+  const store=TOP('儲能站');
+  flows.energy=[new Flow(TOP('太陽能光電屋頂'),store,amber,3,.22,7),new Flow(movers.blades.getWorldPosition(new THREE.Vector3()),store,amber,8,.3,8),new Flow(store,TOP('城市營運中心').setY(4),amber,6,.25,8),new Flow(store,TOP('垂直森林大樓').setY(6),amber,10,.25,8)];
+  const pad=TOP('無人機起降站');
+  flows.drone=[new Flow(pad,TOP('垂直森林大樓'),mag,14,.2,7),new Flow(pad,TOP('城市大樓_0'),mag,16,.2,7),new Flow(pad,TOP('城市大樓_9'),mag,18,.2,7)];
+  flows.privacy=[new Flow(TOP('智慧路口號誌'),hub,cyan,8,.25,6),new Flow(TOP('智慧路燈'),hub,cyan,8,.25,6),new Flow(hub,V(-50,70,-60),amber,10,.4,9)];
+}
+
+/* =====================================================================
+   鏡頭：每頁一個鏡位，換頁時沿弧線補間
+   ===================================================================== */
+function shotFor(s,step){
+  const f=s.focus?P(s.focus):null;
+  switch(s.id){
+    case'cover':return{pos:V(78,52,92),tgt:V(0,14,0),orbit:true};
+    case'urban':return step?{pos:V(0,120,128),tgt:V(0,0,-6)}:{pos:V(-74,62,96),tgt:V(4,10,0)};
+    case'twin':return step?{pos:V(10,78,104),tgt:V(0,12,0)}:{pos:f.clone().add(V(32,12,52)),tgt:f.clone().add(V(0,2,0))};
+    case'pole':return{pos:V(-18+(step?2:0),6,8.5),tgt:V(-6,4.5,15)};
+    case'mobility':return{pos:V(14,9,46-(step?6:0)),tgt:V(12,2,13)};
+    case'energy':return step?{pos:V(6,34,70),tgt:V(-28,8,14)}:{pos:f.clone().add(V(20,16,30)),tgt:f.clone().add(V(-2,3,-2))};
+    case'green':return{pos:f.clone().add(V(24,6,34-(step?6:0))),tgt:f.clone().add(V(0,2,0))};
+    case'drone':return{pos:V(18,30,62-(step?6:0)),tgt:V(0,14,24)};
+    case'privacy':return step?{pos:V(0,110,170),tgt:V(0,6,0)}:{pos:V(-90,62,110),tgt:V(0,10,0)};
+    case'closing':return{pos:V(66,40,76),tgt:V(0,12,0),orbit:true};
+  }
+}
+/* 依資訊卡位置把主體推到另一側（setViewOffset） */
+function offsetFor(layout){if(isNarrow())return{x:0,y:.2};return layout==='left'||layout==='hero'?{x:-.17,y:0}:layout==='right'?{x:.17,y:0}:layout==='bottom'?{x:0,y:.2}:{x:0,y:0}}
+const cam={from:V(0,0,0),fromT:V(0,0,0),to:V(0,0,0),toT:V(0,0,0),tgt:V(0,0,0),start:0,dur:1,lift:0,orbit:false,off:{x:0,y:0},offNow:{x:0,y:0}};
+function setShot(s,step,slideChanged,instant=false){
+  const sh=shotFor(s,step);
+  cam.from.copy(camera.position);cam.fromT.copy(cam.tgt);
+  cam.to.copy(sh.pos);cam.toT.copy(sh.tgt);cam.orbit=!!sh.orbit;
+  const dist=cam.from.distanceTo(cam.to);
+  cam.dur=instant||reduced?1:THREE.MathUtils.clamp(900+dist*14,1200,2600);
+  cam.lift=dist>40?Math.min(40,dist*.2):dist*.15;
+  cam.start=performance.now();
+  cam.off=offsetFor(s.steps[step].layout);
+  if(instant){camera.position.copy(sh.pos);cam.tgt.copy(sh.tgt);cam.offNow={...cam.off}}
+}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* =====================================================================
+   每一幀
+   ===================================================================== */
+const tmp=new THREE.Vector3(), clock=new THREE.Clock();
+function project(v){tmp.copy(v).project(camera);return{x:(tmp.x*.5+.5)*innerWidth,y:(-tmp.y*.5+.5)*innerHeight,ok:tmp.z>-1&&tmp.z<1}}
+const wrap=v=>((v+46)%92+92)%92-46;
+function frame(){
+  requestAnimationFrame(frame);
+  const t=still?0:clock.getElapsedTime(), now=performance.now();
+  if(!ready){composer.render();return}
+  const s=SLIDES[slideIdx];
+
+  // 鏡頭補間（二次貝茲弧線）＋待機微晃
+  const k=Math.min(1,(now-cam.start)/cam.dur), e=ease(k);
+  const mid=cam.from.clone().lerp(cam.to,.5);mid.y+=cam.lift;
+  const p=cam.from.clone().multiplyScalar((1-e)**2).add(mid.multiplyScalar(2*(1-e)*e)).add(cam.to.clone().multiplyScalar(e*e));
+  cam.tgt.lerpVectors(cam.fromT,cam.toT,e);
+  if(cam.orbit&&k>=1&&!still){const r=Math.hypot(cam.to.x,cam.to.z),a0=Math.atan2(cam.to.z,cam.to.x),a=a0+(now-cam.start-cam.dur)*.00004;p.set(Math.cos(a)*r,cam.to.y,Math.sin(a)*r)}
+  const sway=reduced?0:Math.min(1,k)*(s.focus?.05:.3);
+  p.x+=Math.sin(t*.31)*sway;p.y+=Math.sin(t*.23)*sway*.5;
+  camera.position.copy(p);camera.lookAt(cam.tgt);
+  const ok=still?1:.05;cam.offNow.x+=(cam.off.x-cam.offNow.x)*ok;cam.offNow.y+=(cam.off.y-cam.offNow.y)*ok;
+  camera.setViewOffset(innerWidth,innerHeight,cam.offNow.x*innerWidth,cam.offNow.y*innerHeight,innerWidth,innerHeight);
+
+  // 城市中的動態：全息環、風機、車流、無人機
+  if(movers.ring){movers.ring.rotation.y=t*.4;movers.ring.position.y=30+Math.sin(t*.8)*.6}
+  if(movers.blades)movers.blades.rotation.z=-t*1.1;
+  for(const c of movers.cars){const d=wrap(c.base[c.axis]+c.dir*c.speed*t);c.o.position[c.axis]=d}
+  for(const d of movers.drones){
+    if(d.i===0){const lift=s.id==='drone'?Math.min(1,Math.max(0,(now-cam.start-cam.dur*.5)/2000)):0;d.o.position.y=d.base.y+lift*6+Math.sin(t*2)*.08;d.o.rotation.y=t*.6}
+    else{const c=P('無人機起降站'),r=8+d.i*4,a=t*(.35+d.i*.08)+d.i*2;d.o.position.set(c.x+Math.cos(a)*r,d.base.y+Math.sin(t*1.3+d.i)*.6,c.z+Math.sin(a)*r*.7)}
+  }
+
+  // 資料流
+  for(const [id,list] of Object.entries(flows)){const on=s.id===id&&(id!=='twin'||stepIdx>0);list.forEach(f=>f.update(t,on))}
+
+  // 資料治理罩
+  const domeOn=s.id==='privacy'?1:0;dome.userData.a=(dome.userData.a??0)+(domeOn-(dome.userData.a??0))*(still?1:.05);
+  const da=dome.userData.a;dome.scale.setScalar(Math.max(.001,.6+.4*da));dome.children[0].material.opacity=.05*da;dome.children[1].material.opacity=.28*da;dome.visible=da>.01;dome.rotation.y=t*.05;
+
+  // 指引線與標籤（鏡頭到位後才出現）
+  if(s.focus&&k>.92&&!isNarrow()){
+    const sp=project(P(s.focus)),r=card.getBoundingClientRect();
+    if(sp.ok){
+      const leftSide=sp.x>r.right, ax=leftSide?r.right:r.left, ay=THREE.MathUtils.clamp(sp.y,r.top+40,r.bottom-40);
+      const cx=(ax+sp.x)/2;
+      leaderPath.setAttribute('d',`M${ax},${ay} C${cx},${ay} ${cx},${sp.y} ${sp.x},${sp.y}`);
+      leaderDot.setAttribute('cx',sp.x);leaderDot.setAttribute('cy',sp.y);leaderRing.setAttribute('cx',sp.x);leaderRing.setAttribute('cy',sp.y);
+      leader.classList.add('show');
+      tag.textContent=s.tagText;tag.style.transform=`translate(${sp.x+(leftSide?18:-18-tag.offsetWidth)}px,${sp.y-44}px)`;tag.classList.add('show');
+    }else{leader.classList.remove('show');tag.classList.remove('show')}
+  }else{leader.classList.remove('show');tag.classList.remove('show')}
+
+  // 城市挑戰頁的設施熱點
+  const hotOn=s.hotspots&&stepIdx===0&&k>.85;
+  DEVICES.forEach(([name],i)=>{const el=hotEls[i];if(!hotOn){el.classList.remove('show');return}const sp=project(TOP(name));el.style.left=sp.x+'px';el.style.top=sp.y+'px';el.classList.toggle('show',sp.ok)});
+
+  composer.render();
+}
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);if(ready)cam.off=offsetFor(SLIDES[slideIdx].steps[stepIdx].layout)});
+
+/* 啟動：支援網址 #頁碼 */
+const [hashSlide,hashStep]=location.hash.slice(1).split('.');
+const startAt=Math.max(0,Math.min(SLIDES.length-1,(parseInt(hashSlide)||1)-1));
+go(startAt,(parseInt(hashStep)||1)-1,true);
+camera.position.set(78,52,92);cam.tgt.set(0,14,0);
+frame();
+</script>
+</body>
+</html>
