@@ -58,6 +58,15 @@
 - CSS：`:root` 換深色 tokens，並把範例裡寫死的淺色（`.dek`、`.facts li`、`.col`、`.chip`、`.tool` 背景等）改用 token；標題 `<em>` 可用漸層文字＋`animation` 流動；卡片上緣加一道掃過的流光（`::after` + `background-position` 動畫）。
 - 外圍可加 `GridHelper` 與星空 `Points`，讓城市邊緣融入霧中。
 
+## 敘事／角色主題（社會議題、故事類）
+
+`assets/example-story/`（「斷在學校」，9 頁）在深色架構上加了「角色走位」與「氛圍轉換」，適合有主角、有情緒起伏的報告：
+
+- **角色**：GLB 內每個小人是一個物件，子物件 `{名}_左腳／右腳／左手／右手` 的原點設在關節，前端以正弦擺動做走路；`planFor(id, step)` 回傳每頁每步的 `{r:路徑, face, pose:'sit'|'slump'|'wave'…, delay, hideEnd, loop}`，`applyPlan()` 在換步時套用，`updateActor()` 每幀沿路徑移動。不出場的角色 `hideEnd` 隱藏。
+- **氛圍值 `mood`（0～1）**：每頁（或每步）設一個值，連動天空／霧色、燈光強度、曝光、雨、光點，以及最後一道自訂 `ShaderPass`（`sat` 飽和度、`warm` 暖色、`vig` 暗角）。`mood≥.8` 時把 `<html data-mood="bright">`，卡片改淺色 tokens。故事前段灰暗、解方段逐步調亮。
+- **注意**：低飽和度時紅藍警示燈也會變灰；需要彩色重點時，讓該物件不受 grade pass 影響或在該頁暫時提高 `sat`。
+- 車輛進出場：以 `parked` 條件決定目標 x，每幀插值；閃燈只在特定頁啟用。
+
 ## 動態物件
 
 以名稱前綴抓物件（`city.children.filter(o=>o.name.startsWith('自駕車_'))`），在 `frame()` 中更新：

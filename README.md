@@ -14,10 +14,11 @@
 
 ## 範例
 
-兩份範例只示範格式與動畫手法，不是要套用的大綱：
+三份範例只示範格式與動畫手法，不是要套用的大綱：
 
 - **淺色生活風** `assets/example/` —「資通訊科技與住」，13 頁、含完整講稿
 - **夜景霓虹風** `assets/example-dark/` —「科技與未來城市」，10 頁
+- **灰暗→明亮敘事風** `assets/example-story/` —「斷在學校：從輔導觀點看中途離校與輟學」，9 頁、含完整講稿；角色小人（學生、警察、老師、社工）依頁面走位，畫面從灰暗雨天逐步調亮
 
 直接預覽範例：在範例資料夾放一份 `assets/server.bat` 後雙擊（或在該資料夾執行 `python -m http.server`，再開 `http://127.0.0.1:8000/main.html`）。
 
@@ -83,7 +84,8 @@ report-3d-showcase/
 │  ├─ server.bat               # 啟動器範本
 │  ├─ 文案範本.md               # 給使用者填寫的文案格式
 │  ├─ example/                 # 淺色生活風範例
-│  └─ example-dark/            # 夜景霓虹風範例
+│  ├─ example-dark/            # 夜景霓虹風範例
+│  └─ example-story/           # 灰暗→明亮敘事風範例（角色動畫）
 ├─ references/
 │  ├─ blender-mcp-setup.md     # Blender MCP 安裝與檢查
 │  ├─ modeling-guide.md        # 建模規範（具名物件、cutaway、匯出）

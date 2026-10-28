@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="zh-Hant" data-mood="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2b2f35">
+<title>斷在學校｜3D 互動簡報</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap">
+<style>
+:root{
+  --paper:#2b2f35;--ink:#eef0f2;--text2:#c3c8cf;--muted:#8d949d;--line:rgba(220,228,236,.13);
+  --accent:#f2a65a;--accent-soft:rgba(242,166,90,.15);--accent2:#9fb4c9;--warn:#e8735a;--warn-soft:rgba(232,115,90,.14);
+  --card:rgba(30,33,38,.74);--card-border:rgba(255,255,255,.1);--glass:rgba(34,38,44,.72);--on-accent:#2a1a08;
+  --mono:'DM Mono',ui-monospace,monospace;--serif:'Noto Serif TC','Noto Sans TC',serif;
+  --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;
+  --gutter:clamp(18px,4.6vw,72px);--ease:cubic-bezier(.65,0,.2,1);--spring:cubic-bezier(.2,.9,.25,1.12);
+}
+/* 明亮：學校重新被點亮之後 */
+html[data-mood="bright"]{
+  --paper:#e9f0f4;--ink:#2a2420;--text2:#51473f;--muted:#8a7d70;--line:rgba(80,55,30,.13);
+  --accent:#d96a1f;--accent-soft:rgba(217,106,31,.12);--accent2:#3f8f6b;--warn:#c4472f;--warn-soft:rgba(196,71,47,.1);
+  --card:rgba(255,252,246,.84);--card-border:rgba(120,80,40,.14);--glass:rgba(255,252,246,.8);--on-accent:#fff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;transition:background 1.2s,color 1.2s}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
+/* 底片顆粒與暗角：灰暗時明顯，明亮時淡去 */
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.9;transition:opacity 1.6s;background:radial-gradient(120% 90% at 50% 50%,transparent 55%,rgba(0,0,0,.42) 100%)}
+html[data-mood="bright"] .grain{opacity:.25}
+
+/* ---------- 載入畫面 ---------- */
+.loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:#2b2f35;color:#eef0f2;transition:opacity .9s var(--ease),visibility .9s}
+.loader.done{opacity:0;visibility:hidden}
+.loader-inner{text-align:center}
+.loader b{display:block;font:900 clamp(30px,4.4vw,48px) var(--serif);letter-spacing:.02em}
+.loader b em{font-style:normal;color:#f2a65a}
+.loader-bar{width:min(260px,60vw);height:2px;margin:22px auto 10px;background:rgba(255,255,255,.12);overflow:hidden;border-radius:2px}
+.loader-bar i{display:block;height:100%;width:0;background:#f2a65a;transition:width .3s}
+.loader small{font:11px var(--mono);letter-spacing:.14em;color:#8d949d}
+.load-error{display:none;max-width:520px;margin:18px auto 0;padding:12px 16px;background:rgba(242,166,90,.1);color:#ffd9a8;border:1px solid rgba(242,166,90,.4);border-radius:10px;font-size:13px;line-height:1.7;text-align:left}
+.load-error.show{display:block}
+
+/* ---------- 頂部列 ---------- */
+.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);animation:pulse 2.4s ease-in-out infinite}
+.tools{display:flex;gap:8px;pointer-events:auto}
+.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--glass);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
+.tool:hover{border-color:var(--accent);background:var(--accent-soft)}
+.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
+.counter b{font-weight:500;color:var(--ink)}
+.counter span{color:var(--muted)}
+
+/* ---------- 資訊卡 ---------- */
+.card{
+  position:fixed;z-index:10;width:var(--w);left:var(--l);top:var(--t);
+  transform:translate(0,var(--ty));
+  max-height:calc(100svh - 150px);overflow:auto;scrollbar-width:none;
+  padding:clamp(20px,2.4vw,34px);border-radius:22px;
+  background:var(--card);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid var(--card-border);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.55);
+  transition:left 1s var(--ease),top 1s var(--ease),width 1s var(--ease),transform 1s var(--ease),opacity .45s,filter .45s,background 1.2s,border-color 1.2s;
+}
+.card::-webkit-scrollbar{display:none}
+.card[data-layout="left"]{--w:min(480px,38vw);--l:var(--gutter);--t:50%;--ty:-50%}
+.card[data-layout="right"]{--w:min(480px,38vw);--l:calc(100vw - var(--gutter) - var(--w));--t:50%;--ty:-50%}
+.card[data-layout="hero"]{--w:min(620px,48vw);--l:var(--gutter);--t:52%;--ty:-50%}
+.card[data-layout="bottom"]{--w:min(1080px,calc(100vw - 2 * var(--gutter)));--l:calc(50vw - var(--w) / 2);--t:calc(100svh - 74px);--ty:-100%}
+.card.leaving{opacity:0;filter:blur(8px)}
+.card::before{content:"";position:absolute;left:0;top:28px;width:3px;height:42px;border-radius:0 3px 3px 0;background:var(--accent)}
+
+.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.card{color:var(--ink)}
+.title{color:var(--ink);font:900 clamp(32px,3.6vw,54px)/1.16 var(--serif);letter-spacing:-.01em;margin:16px 0 14px}
+.card[data-layout="hero"] .title{font-size:clamp(56px,7.4vw,112px);margin:18px 0 14px}
+.title em{font-style:normal;color:var(--accent)}
+.title .ln{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
+.title .ln>span{display:inline-block}
+.dek{font-size:clamp(14px,1.15vw,16.5px);line-height:1.9;color:var(--text2);margin:0}
+.card[data-layout="hero"] .dek{font-size:clamp(17px,1.5vw,21px);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font:11px var(--mono);letter-spacing:.06em;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--accent-soft);color:var(--ink)}
+.facts{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:2px;counter-reset:f}
+.facts li{counter-increment:f;display:grid;grid-template-columns:30px 1fr;gap:8px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.75;color:var(--text2)}
+.facts li::before{content:counter(f,decimal-leading-zero);font:11px var(--mono);color:var(--accent);padding-top:3px}
+.facts b{color:var(--ink)}
+.facts.plain li{grid-template-columns:1fr}
+.facts.plain li::before{display:none}
+.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
+.sources{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.6;color:var(--muted)}
+.sources::before{content:"資料來源";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
+.sources a{text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+
+/* 分組（逐步出現的段落） */
+.grp{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--accent-soft);border:1px solid var(--line)}
+.grp .k{font:10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.grp h4{margin:5px 0 6px;font-size:17px;letter-spacing:-.01em;color:var(--ink)}
+.grp p{margin:0;font-size:13.5px;line-height:1.8;color:var(--text2)}
+.grp .facts{margin-top:8px}
+.grp .facts li{font-size:13px;padding:8px 0}
+.grp.row{margin-top:6px;padding:9px 14px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:baseline;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0}
+.grp.row .k{grid-row:span 2;font-size:11px;color:var(--accent)}
+.grp.row h4{margin:0;font-size:15px}
+.grp.row p{font-size:12.5px;line-height:1.7}
+.grp.row.last{background:var(--warn-soft);border-radius:10px;border-top-color:transparent}
+.grp.row.last .k,.grp.row.last h4{color:var(--warn)}
+.pips{display:flex;gap:5px;margin-top:2px}
+.pips i{width:22px;height:4px;border-radius:4px;background:var(--line)}
+.pips i.on{background:var(--accent)}
+.quote{margin:16px 0 0;padding:4px 0 4px 18px;border-left:3px solid var(--accent);font:600 clamp(17px,1.5vw,21px)/1.7 var(--serif);color:var(--ink)}
+
+/* 大數字 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.stat{padding:14px 12px;border-radius:14px;background:var(--accent-soft);border:1px solid var(--line)}
+.stat b{font:500 clamp(24px,2.3vw,34px)/1 var(--mono);letter-spacing:-.04em;color:var(--ink)}
+.stat small{font:12px var(--mono);color:var(--muted);margin-left:2px}
+.stat span{display:block;margin-top:8px;font-size:11.5px;line-height:1.5;color:var(--text2)}
+.stat.warn{background:var(--warn-soft)}
+.stat.warn b{color:var(--warn)}
+
+/* 進場動畫：.anim 元素依 --i 依序出現 */
+.anim{opacity:0;transform:translateY(16px)}
+.card.in .anim{animation:rise .8s var(--spring) forwards;animation-delay:calc(var(--i,0) * 70ms + 120ms)}
+.title .ln>span{transform:translateY(105%)}
+.card.in .title .ln>span{animation:lineUp .9s var(--ease) forwards;animation-delay:calc(var(--i,0) * 90ms + 80ms)}
+.part[hidden]{display:none!important}
+.part.reveal .anim,.part.reveal.anim{animation:rise .7s var(--spring) both;animation-delay:calc(var(--i,0) * 70ms)}
+
+/* ---------- 指引線、標籤 ---------- */
+#leader{position:fixed;inset:0;z-index:8;pointer-events:none;width:100%;height:100%;opacity:0;transition:opacity .5s}
+#leader.show{opacity:1}
+#leader path{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 5;animation:dash 1.2s linear infinite}
+#leader .dot{fill:var(--accent)}
+#leader .ring{fill:none;stroke:var(--accent);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:ring 1.8s ease-out infinite}
+.tag{position:fixed;z-index:9;left:0;top:0;pointer-events:none;padding:5px 10px;border-radius:999px;background:var(--accent);color:var(--on-accent);font:11px var(--sans);font-weight:700;letter-spacing:.06em;white-space:nowrap;opacity:0;transition:opacity .4s}
+.tag.show{opacity:1}
+
+/* ---------- 進度軌 ---------- */
+.rail{position:fixed;z-index:20;left:var(--gutter);right:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;gap:6px;align-items:flex-end}
+.seg{flex:1;height:22px;border:0;padding:0;background:none;cursor:pointer;position:relative}
+.seg::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:3px;background:var(--line);transition:background .3s,height .3s}
+.seg i{position:absolute;left:0;bottom:0;height:3px;border-radius:3px;background:var(--accent);width:0;transition:width .7s var(--ease)}
+.seg.done i{width:100%}
+.seg:hover::before{height:5px}
+.seg span{position:absolute;left:0;bottom:12px;font:10px var(--sans);letter-spacing:.06em;white-space:nowrap;color:var(--muted);opacity:0;transform:translateY(4px);transition:.25s}
+.seg:hover span,.seg.active span{opacity:1;transform:none}
+.seg.active span{color:var(--ink)}
+.navbtns{display:flex;gap:6px;margin-left:12px}
+.navbtns button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass);cursor:pointer;font-size:15px;transition:.2s}
+.navbtns button:hover{background:var(--accent);color:var(--on-accent)}
+
+/* ---------- 講稿面板 ---------- */
+.notes{position:fixed;z-index:30;right:12px;top:60px;bottom:64px;width:min(420px,calc(100vw - 24px));padding:22px 24px;border-radius:18px;background:rgba(24,26,30,.95);border:1px solid rgba(255,255,255,.1);color:#e9ece8;backdrop-filter:blur(12px);transform:translateX(calc(100% + 24px));transition:transform .6s var(--ease);display:flex;flex-direction:column;gap:12px}
+.notes.open{transform:none}
+.notes header{display:flex;justify-content:space-between;align-items:baseline;font:11px var(--mono);letter-spacing:.12em;color:#b7a48f}
+.notes h3{margin:0;font-size:20px;letter-spacing:-.02em}
+.notes .body{flex:1;overflow:auto;font-size:15px;line-height:2;color:#dde2e8;white-space:pre-line;padding-right:6px}
+.notes .body:empty::before{content:"（尚未提供講稿）";color:#7d848c}
+.notes footer{font:11px var(--mono);color:#8b929b;border-top:1px solid #33373d;padding-top:10px;display:flex;justify-content:space-between;gap:10px}
+.notes .timer{color:#f2a65a}
+
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes lineUp{to{transform:none}}
+@keyframes nudge{to{transform:translateX(8px);opacity:.5}}
+@keyframes pulse{50%{box-shadow:0 0 0 7px transparent}}
+@keyframes dash{to{stroke-dashoffset:-18}}
+@keyframes ring{from{r:6;opacity:1}to{r:22;opacity:0}}
+
+@media (max-width:820px){
+  .card,.card[data-layout]{--w:calc(100vw - 2 * var(--gutter));--l:var(--gutter);--t:calc(100svh - 70px);--ty:-100%;max-height:52svh;padding:20px}
+  .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
+  .stats{grid-template-columns:1fr 1fr}
+  .tool .lbl{display:none}
+  .seg span{display:none}
+  .navbtns{display:none}
+}
+html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="world" aria-label="家、學校與街頭的 3D 場景"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
+<div class="tag" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand"><i></i>GUIDANCE · 斷在學校</div>
+  <div class="tools">
+    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">09</span></span></div>
+    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
+    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
+  </div>
+</header>
+
+<article class="card" data-layout="hero" aria-live="polite"></article>
+
+<nav class="rail" aria-label="章節"><div class="navbtns"><button id="prevBtn" aria-label="上一步">←</button><button id="nextBtn" aria-label="下一步">→</button></div></nav>
+
+<aside class="notes" aria-label="講稿">
+  <header><span id="notesIdx">01 / 09</span><span class="timer" id="timer">00:00</span></header>
+  <h3 id="notesTitle"></h3>
+  <div class="body" id="notesBody"></div>
+  <footer><span id="notesNext"></span><span>← → 換頁　N 關閉</span></footer>
+</aside>
+
+<div class="loader"><div class="loader-inner"><b>斷在<em>學校</em></b><div class="loader-bar"><i></i></div><small id="loadPct">LOADING 3D SCENE · 0%</small><div class="load-error" role="status"></div></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+/* =====================================================================
+   簡報內容：每一頁的文字與步驟
+   steps：每按一次「下一步」進入下一個 step；parts 決定顯示哪些區塊
+   mood：0 = 灰暗、1 = 明亮（可為每一步各給一個值）
+   focus / tag：指引線指向的物件或角色（可寫在 step 內）
+   ===================================================================== */
+const SLIDES = [
+{ id:'cover', label:'開場', eyebrow:'GUIDANCE · DROPOUT PREVENTION', mood:0,
+  title:'斷在<em>學校</em>',
+  dek:'從輔導觀點看中途離校與輟學',
+  chips:['2026 年 10 月 27 日','@xuzhi'], hint:true,
+  steps:[{layout:'hero',parts:['dek','chips']}],
+  notes:`各位老師、同學好，我今天報告的主題是「斷在學校：從輔導觀點看中途離校與輟學」。
+
+大家看到的這個畫面是灰色的，還下著雨。左邊是一個家，中間是學校，右邊是街頭。站在校門口的這個孩子，等一下會帶我們走完整個故事。
+
+我想先請大家記住一個問題：一個孩子離開學校，到底是從哪裡開始斷掉的？又可以在哪裡把它接回來？` },
+
+{ id:'news', label:'小樂的故事', eyebrow:'一則新聞', mood:0,
+  title:'小樂不是<br><em>突然不見</em>的',
+  dek:'小樂的離校，從家裡開始，在學校長大，最後在街頭成形。（國教署表揚中輟輔導時所舉案例，聯合報 2015）',
+  groups:[
+    {k:'01 · 家庭',h:'家庭是起始',p:'父母離異，祖母與父親先後過世，連住的房子都被法拍——安全感一層層剝落。'},
+    {k:'02 · 學校',h:'學校是發展',p:'絕望變成對同學的言語霸凌、對師長的頂撞；關係破裂，最後離開教室。'},
+    {k:'03 · 社會',h:'社會是後果',p:'中輟期間四處遊蕩、流連網咖，直到縣府安排他到中介學園住宿就讀，才重新找到方向。'}],
+  quote:'在小樂「霸凌、頂撞」的那段日子裡，有沒有人看見行為背後那個正在失去一切的孩子？如果有，故事能不能在學校就轉彎？',
+  steps:[{layout:'left',parts:['dek']},
+         {layout:'left',parts:['dek','g0'],focus:'破舊房屋',tag:'家：起點'},
+         {layout:'left',parts:['dek','g0','g1'],focus:'小樂',tag:'小樂'},
+         {layout:'left',parts:['dek','g0','g1','g2'],focus:'網咖',tag:'網咖'},
+         {layout:'left',parts:['quote']}],
+  sources:['聯合報〈10年少一半 國中小中輟生創新低〉，2015'],
+  notes:`先從一則新聞開始。教育部在表揚中輟輔導有功單位時，國教署舉了一位化名「小樂」的學生為例。這是 2015 年聯合報的報導。
+
+小樂的離校，從家裡開始，在學校長大，最後在街頭成形。
+
+（下一步）
+
+第一段是家庭。小樂從小經歷父母離異，祖母和父親又先後過世，最後連住的房子都被法拍。大家看門口那塊「法拍」的牌子：他的安全感，就是這樣一層一層被剝掉的。
+
+（下一步）
+
+第二段是學校。小樂背起書包走進國中，可是這份絕望沒有消失，而是變成對同學的言語霸凌、對師長的頂撞。關係一段一段破裂，最後他離開了教室。
+
+（下一步）
+
+第三段是社會。中輟期間，他四處遊蕩、流連網咖，直到縣府社會處安排他到中介學園住宿就讀，才重新找到方向。
+
+（下一步）
+
+把這三段拉遠來看，是一條很清楚的路徑：家庭是起始，學校是發展，社會是後果。
+
+身為輔導人員，我們要問的是：在小樂霸凌、頂撞的那段日子裡，有沒有人看見行為背後那個正在失去一切的孩子？如果有，故事能不能在學校就轉彎？` },
+
+{ id:'now', label:'現況', eyebrow:'現況 · 113 學年（2024–25）', mood:0,
+  title:'回來的孩子，<br>有<em>一半</em>會再離開',
+  dek:'把孩子找回來只是一半的工作，讓他「留下來」才是輔導真正的戰場。',
+  stats:[{n:'2,104',u:'人',l:'國中小中輟人數（113 學年）；國中 1,694、國小 410'},
+         {n:'89.8',u:'%',l:'總復學率（113 學年）：找回來的機制已相當成熟'},
+         {n:'49.28',u:'%',l:'總再輟率（113 學年）：近半再度離開',warn:true}],
+  facts:['<b>高中職中途離校（2025 報導）：</b>每年約 2 萬人，比例是國中小的五倍以上，且無強迫入學保護',
+         '<b>離校後長期待在家（2025 報導）：</b>54.61%——後果不只是犯罪，還有繭居與社會退縮'],
+  groups:[{k:'WHY · 教育部分析（2015）',h:'中輟原因',p:'過半為個人因素（以作息不正常為主），其次是家庭因素（父母管教不當最多），再其次是社會因素（不良同儕）。「作息不正常」很少是孩子單獨造成的，它往往是家庭照顧功能鬆動後，最先在學校顯現的症狀。'}],
+  steps:[{layout:'left',parts:['dek','stats']},{layout:'left',parts:['dek','facts']},{layout:'left',parts:['g0']}],
+  sources:['教育部中輟統計（衛福部兒少統計轉載）','姊妹淘〈台灣高中職離校潮飆升〉，2025','聯合報，2015'],
+  notes:`小樂不是特例。先看 113 學年的數字。
+
+全國國中小中輟生有 2,104 人，其中國中 1,694 人，大約占八成。總復學率是 89.8%，表示「把孩子找回來」的機制已經相當成熟。
+
+但右邊這個紅色的數字是 49.28%，這是總再輟率。畫面上這群孩子走回校門，但其中一半又轉身離開了。也就是說，把孩子找回來只是一半的工作，讓他「留下來」，才是輔導真正的戰場。
+
+（下一步）
+
+到了高中職，問題更大。根據 2025 年的報導，高中職每年中途離校大約 2 萬人，比例是國中小的五倍以上，而且沒有強迫入學的保護。
+
+離校之後，有 54.61% 長期待在家裡。所以後果不只是犯罪，還有繭居與社會退縮。
+
+（下一步）
+
+那孩子為什麼離開？教育部在 2015 年的分析中，過半歸為個人因素，以「生活作息不正常」為主；其次是家庭因素，以父母管教不當最多；再其次是社會因素，也就是受到不良同儕影響。
+
+但從輔導的角度來看，「作息不正常」很少是孩子單獨造成的。它往往是家庭照顧功能鬆動之後，最先在學校顯現出來的症狀。` },
+
+{ id:'family', label:'家庭', eyebrow:'起點 · 家庭', mood:0, focus:'破舊房屋', tag:'孩子帶來上學的家',
+  title:'家庭是<em>起始</em>',
+  dek:'孩子的書包裡，裝著一整個家。學校無法替孩子換一個家，但必須看懂孩子帶著什麼樣的家來上學。',
+  facts:['<b>照顧缺位：</b>父母離異、失親、隔代教養或長期在外工作——早上沒人叫起床，晚上沒人問功課',
+         '<b>管教失衡：</b>過度嚴厲、完全放任或標準不一致——學不會規律，也學不會信任大人',
+         '<b>經濟與居住不穩：</b>頻繁搬家、打工貼補家用、住所被迫遷移——上學不再是最優先',
+         '<b>關係衝突：</b>親子溝通斷線、家中長期爭吵——只好往外找歸屬'],
+  quote:'這些不是孩子的錯，而是他的基本需求沒被滿足。學校裡那位穩定的大人，可能是他生命中第一個「不會離開」的人。',
+  steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts'],focus:'法拍告示',tag:'法拍告示'},{layout:'left',parts:['quote']}],
+  sources:['許舜賢〈青少年中途輟學相關因素之探討〉'],
+  notes:`所以我們回到故事的起點：家庭。
+
+孩子的書包裡，裝著一整個家。學校沒辦法替孩子換一個家，但必須看懂孩子帶著什麼樣的家來上學。
+
+（下一步）
+
+常見的家庭起點有四種樣貌。
+
+第一是照顧缺位：父母離異、失親、隔代教養，或是父母長期在外工作。孩子早上沒人叫他起床，晚上也沒人問他功課。
+
+第二是管教失衡：過度嚴厲、完全放任，或是父母的標準不一致。孩子學不會規律，也學不會信任大人。
+
+第三是經濟與居住不穩：頻繁搬家、需要打工貼補家用、住所被迫遷移。對這樣的孩子來說，上學不是最優先的事。
+
+第四是關係衝突：親子溝通斷線、家裡長期爭吵。孩子在家感受不到被理解，只好往外找歸屬。
+
+研究也指出，家庭因素中最關鍵的，就是親子關係衝突與管教問題。
+
+（下一步）
+
+從輔導的眼光看，這些都不是孩子的錯，而是他的基本需求沒有被滿足。當安全感、被照顧、被看見都匱乏的時候，「準時到校、專心上課」對他來說是一個太高的要求。
+
+家庭給了起點，但起點不是終點。對很多孩子來說，學校裡那位穩定的大人，可能是他生命中第一個「不會離開」的人。` },
+
+{ id:'school', label:'學校', eyebrow:'發展 · 學校', mood:0, focus:'小樂', tag:'小樂',
+  title:'學校是<em>發展</em>',
+  dek:'讓問題「長大」的，常是一連串沒被接住的挫折；最關鍵的是孩子缺少成功經驗（許舜賢）。',
+  groups:[
+    {row:true,k:'01',h:'學業挫敗',p:'從「我不會」變成「我不要」，再變成「反正我就是爛」'},
+    {row:true,k:'02',h:'人際疏離',p:'被排擠或霸凌，轉向校外同儕尋找歸屬'},
+    {row:true,k:'03',h:'師生衝突與標籤化',p:'被貼上「問題學生」，懲處多於理解，孩子用壞行為證明標籤'},
+    {row:true,k:'04',h:'缺曠課累積',p:'遲到、半天課，到整天不見人；每一次缺席都讓回來更難'},
+    {row:true,last:true,k:'05',h:'正式離校',p:'國中小連續三日未到校即列中輟通報；高中職多以休學、退學或「志趣不合」收場'}],
+  quote:'行為是訊息，不是結論。每一次曠課，都是孩子在投票：這裡沒有我的位置。',
+  steps:[{layout:'left',parts:['dek']},
+         {layout:'left',parts:['dek','g0']},
+         {layout:'left',parts:['dek','g0','g1']},
+         {layout:'left',parts:['dek','g0','g1','g2']},
+         {layout:'left',parts:['dek','g0','g1','g2','g3']},
+         {layout:'left',parts:['dek','g0','g1','g2','g3','g4']},
+         {layout:'left',parts:['quote']}],
+  sources:['許舜賢〈青少年中途輟學相關因素之探討〉','姊妹淘，2025'],
+  notes:`家庭給了起點，但讓問題「長大」的，常常是學校裡一連串沒被接住的挫折。學校因素中最關鍵的，是孩子缺少成功經驗，所以對學校生活失去興趣。
+
+一個孩子從教室滑向校門外，通常會經過五個階段。請大家看小樂的位置。
+
+（下一步）
+
+第一，學業挫敗。跟不上進度，從「我不會」變成「我不要」，再變成「反正我就是爛」。你看他坐在位子上，頭已經低下去了。
+
+（下一步）
+
+第二，人際疏離。在班上沒有朋友，被排擠或被霸凌。同學們聚在一起，他一個人走到角落，開始轉向校外的同儕、其他中輟生去找歸屬。
+
+（下一步）
+
+第三，師生衝突與標籤化。頂撞、違規、上課睡覺，於是被貼上「問題學生」的標籤。老師走過來，但懲處多於理解，孩子也開始用壞行為去證明這個標籤。
+
+（下一步）
+
+第四，缺曠課累積。遲到、請假、只上半天課，最後整天不見人。他一步一步靠近校門，而每一次缺席，都讓回來變得更難。
+
+（下一步）
+
+第五，正式離校。國中小只要連續三天沒到校，就會列入中輟通報；高中職則多半以休學、退學或「志趣不合」收場。
+
+高中職離校者有將近一半填寫「志趣不合」，但背後常藏著升學壓力、與父母失聯、在校遭歧視或霸凌，以及對未來失去希望。
+
+（下一步）
+
+所以輔導觀點的核心是：行為是訊息，不是結論。小樂在學校的霸凌與頂撞，正是家裡崩解之後發出的求救訊號。
+
+每一次曠課，都是孩子在投票：這裡沒有我的位置。學校的任務，就是在他投下最後一票之前，讓他找到位置。` },
+
+{ id:'society', label:'社會', eyebrow:'後果 · 社會', mood:0,
+  title:'社會是<em>後果</em>',
+  dek:'孩子一旦離開學校，就同時失去了每天有大人看著他的地方。後果往兩個方向發展。',
+  groups:[
+    {k:'向外',h:'被校外的誘惑接走',p:'早年教育部委託調查：中輟學生犯罪率約為一般學生的三到五倍（鄭崇趁）。監察院調查 2009 年新竹南寮少年圍毆致死案，指出多起青少年重大犯罪的嫌犯幾乎都是中輟或未就學者。'},
+    {k:'向內',h:'退回房間，與社會斷線',p:'高中職中途離校者 54.61% 長時間待在家中，六到七成既未復學也未就業，逐漸成為繭居與社會退縮的高風險群（2025 報導）。'},
+    {k:'保護網',h:'15 歲之後幾乎消失',p:'高中職中離生沒有強迫入學與警政協尋，只能靠學校勸說，無法強制復學；代價還包括就業受限與教育資源浪費（臺中市主計處，2023）。'}],
+  quote:'沒在學校被接住的孩子，會在社會的某個角落等著被接住——或被利用。',
+  steps:[{layout:'left',parts:['dek']},
+         {layout:'left',parts:['dek','g0'],focus:'警察',tag:'警察'},
+         {layout:'left',parts:['dek','g1'],focus:'繭居窗光',tag:'關起來的房間'},
+         {layout:'left',parts:['g2','quote']}],
+  sources:['鄭崇趁〈中輟學生的輔導與中介教育方案〉','監察院〈國中(小)中輟生〉調查報告','姊妹淘，2025','臺中市主計處，2023'],
+  notes:`孩子一旦離開學校，就同時失去了每天有大人看著他的地方。後果大致往兩個方向發展。
+
+（下一步）
+
+第一個方向是向外，被校外的誘惑接走。
+
+早年教育部委託的調查發現，中輟學生的犯罪率大約是一般學生的三到五倍。監察院也曾調查 2009 年新竹南寮的案件：一名青年遭五名 15 到 18 歲的少年圍毆致死。報告指出，在多起震驚社會的青少年犯罪中，嫌犯幾乎都是中輟或未就學的孩子。
+
+（下一步）
+
+第二個方向是向內，退回房間，和社會斷線。
+
+大家看小樂走進了那棟公寓，接著只剩一扇窗還亮著。根據 2025 年的報導，高中職中途離校者有 54.61% 長時間待在家中，六到七成既沒有復學、也沒有就業，逐漸成為繭居與社會退縮的高風險群。
+
+（下一步）
+
+更長遠的代價，還包括學歷不足造成的就業限制、教育資源的浪費，以及出入複雜場所衍生的犯罪問題。
+
+而且，高中職的中離生不像國中小，有強迫入學和警政協尋。學校只能勸說，沒辦法強制復學。這張保護網，在孩子 15 歲之後幾乎就消失了。
+
+沒在學校被接住的孩子，會在社會的某個角落等著被接住，或者被利用。` },
+
+{ id:'defense', label:'五道防線', eyebrow:'在學校斷掉「發展」', mood:[.08,.3,.48,.64,.82,1],
+  title:'輔導的<br><em>五道防線</em>',
+  dek:'斷點必須設在學校。家庭難以在短期內改變，社會後果的代價最高，而學校是唯一每天都看得見孩子的地方。',
+  groups:[
+    {pip:1,k:'第一道 · 早期辨識',h:'讓導師成為第一道雷達',li:['當日未到校、聯繫不上就列入預警，不等到第三天（基隆高中，2026）','建立高關懷名單：家庭變故、學業低落、人際孤立、頻繁請假','留意「安靜的孩子」：繭居型離校者往往不鬧事，只是慢慢消失']},
+    {pip:2,k:'第二道 · 發展性與介入性輔導',h:'給孩子一個不會離開的大人',li:['認輔制度：固定的認輔老師，重點是關係，不是說教','個別諮商與小團體：情緒調節、人際技巧、自我價值重建','親師合作與家訪：把家庭拉回來，而不是把責任推回去']},
+    {pip:3,k:'第三道 · 處遇性輔導',h:'跨網絡把孩子接住',li:['結合學生輔導諮商中心、社工、警政協尋與少年輔導單位，召開個案會議','中介教育：中途班、慈輝班或住宿型學園，讓學習不完全中斷（鄭崇趁）']},
+    {pip:4,k:'第四道 · 多元展能',h:'讓孩子在學校贏一次',li:['技藝教育、彈性課程、社團與服務學習，創造成功經驗','屏東飛夢林學園：有學生在國中畢業前考取中餐丙級證照，升上餐旅高中（公視新聞）']},
+    {pip:5,k:'第五道 · 復學不是結案',h:'讓回來的孩子留下來',li:['再輟率近五成（113 學年 49.28%），復學當天才是第二次輔導的開始','復學適應期：彈性課表、同儕夥伴、與認輔老師固定晤談','持續追蹤至少一學期，及早發現再次滑落的徵兆']}],
+  steps:[{layout:'left',parts:['dek']},
+         {layout:'left',parts:['g0'],focus:'認輔老師',tag:'導師：第一道雷達'},
+         {layout:'left',parts:['g1'],focus:'認輔老師',tag:'認輔老師'},
+         {layout:'left',parts:['g2'],focus:'社工',tag:'社工・警政・輔導'},
+         {layout:'left',parts:['g3'],focus:'技藝攤位',tag:'技藝教育'},
+         {layout:'left',parts:['g4'],focus:'小樂',tag:'回到教室'}],
+  sources:['國立基隆高中中途離校預防追蹤及復學輔導實施計畫，2026','鄭崇趁〈中輟學生的輔導與中介教育方案〉','公視新聞〈飛夢林學園〉'],
+  notes:`所以，斷點必須設在學校。
+
+家庭很難在短期內改變，社會後果的代價又最高，而學校是唯一每天都看得見孩子的地方。家庭埋下起點，問題在學校發展；五道防線的目標，就是在它走進社會之前把它攔下來。
+
+大家注意看，接下來每多一道防線，這個世界就會亮一點。
+
+（下一步）
+
+第一道防線：早期辨識，讓導師成為第一道雷達。
+
+孩子當天沒到校、又聯繫不上，就列入預警，不要等到第三天。同時建立高關懷學生名單，像是家庭變故、學業低落、人際孤立、頻繁請假的孩子，由導師、學務、教務和輔導室共同追蹤。
+
+還要特別留意「安靜的孩子」。繭居型的離校者往往不鬧事，只是慢慢消失。
+
+（下一步）
+
+第二道防線：發展性與介入性輔導，給孩子一個不會離開的大人。
+
+每一位高關懷學生，都配一位固定的認輔老師，重點是關係，不是說教。再搭配個別諮商與小團體，練習情緒調節、人際技巧，重建自我價值。
+
+還有親師合作與家訪：目的是把家庭拉回來，而不是把責任推回去；必要時，再連結親職教育與家庭教育中心。
+
+（下一步）
+
+第三道防線：處遇性輔導，跨網絡把孩子接住。
+
+大家看，社工、警察和老師一起走進校門，圍在孩子身邊。這代表結合學生輔導諮商中心、社工的脆弱家庭服務、警政協尋與少年輔導單位，一起召開個案會議。
+
+如果正規課程已經接不住，還有中介教育：中途班、合作式中途班、慈輝班或住宿型學園，提供替代性的教育，讓學習不會完全中斷。
+
+（下一步）
+
+第四道防線：多元展能，讓孩子在學校贏一次。
+
+透過技藝教育、彈性課程、社團與服務學習，為不擅長紙筆考試的孩子創造成功經驗。
+
+像屏東的飛夢林學園，讓原本中輟、家庭失能的國中生學習技能，有學生在國中畢業前就考取中餐丙級證照，之後升上餐旅高中。
+
+（下一步）
+
+第五道防線：復學不是結案，讓回來的孩子留下來。
+
+再輟率將近五成，代表孩子復學的那一天，才是第二次輔導的開始。我們可以安排復學適應期：彈性課表、安排同儕夥伴、和認輔老師固定晤談。
+
+接著持續追蹤至少一個學期，觀察他的出缺席和人際狀況，及早發現再次滑落的徵兆。
+
+大家看，小樂回到了教室，坐回自己的位子上，整個學校也亮起來了。` },
+
+{ id:'closing', label:'結語', eyebrow:'結語', mood:1,
+  title:'在孩子<br><em>決定離開</em>之前',
+  dek:'我們改變不了孩子出生的家，也很難在他離校後追回失去的時間，但我們每天都在學校見到他。小樂最後被一所中介學園接住；我們希望下一個小樂，在原本的教室裡就被接住。',
+  quote:'輔導不是要把每個孩子都留在同一條路上，而是確保沒有一個孩子在無人察覺的情況下，獨自走出校門。',
+  facts:['家庭是起點，學校是轉折點，社會是終點——轉折點，在我們手上。','孩子的書包裡，裝的不只是課本，還有一整個家。','行為是訊息，不是結論。','每一次曠課，都是孩子在問：這裡有我的位置嗎？','找回來是一半，留下來才是全部。','讓孩子在學校贏一次，他就有理由明天再來。','在學校斷掉發展，就是在社會少一個遺憾。'],
+  steps:[{layout:'left',parts:['dek','quote']},{layout:'left',parts:['facts']}],
+  notes:`最後是結語。
+
+我們改變不了孩子出生的家，也很難在他離校之後追回失去的時間，但我們每天都在學校見到他。小樂最後被一所中介學園接住了；我們希望下一個小樂，可以在原本的教室裡就被接住。
+
+輔導不是要把每個孩子都留在同一條路上，而是確保沒有一個孩子，在無人察覺的情況下，獨自走出校門。
+
+（下一步）
+
+最後，我想用幾句話作結。
+
+家庭是起點，學校是轉折點，社會是終點，而轉折點，在我們手上。
+
+孩子的書包裡，裝的不只是課本，還有一整個家。
+
+行為是訊息，不是結論。
+
+每一次曠課，都是孩子在問：這裡有我的位置嗎？
+
+找回來是一半，留下來才是全部。
+
+讓孩子在學校贏一次，他就有理由明天再來。
+
+在學校斷掉發展，就是在社會少一個遺憾。` },
+
+{ id:'sources', label:'資料來源', eyebrow:'REFERENCES', mood:1,
+  title:'資料<em>來源</em>',
+  facts:['聯合報〈10年少一半 國中小中輟生創新低〉，2015（萬華國中新聞剪輯）','教育部國民中小學中輟統計（衛福部兒少統計專區）','姊妹淘〈台灣高中職離校潮飆升〉，2025','鄭崇趁〈中輟學生的輔導與中介教育方案〉，法務部犯罪防治研究資源網','監察院〈國中(小)中輟生〉調查報告','臺中市主計處〈高中學生中途離校統計〉，2023','許舜賢〈青少年中途輟學相關因素之探討〉','公視新聞〈飛夢林學園〉報導','國立基隆高中中途離校學生預防追蹤及復學輔導實施計畫，2026'],
+  chips:['謝謝聆聽','Q & A'],
+  steps:[{layout:'left',parts:['facts','chips']}],
+  notes:`這是本次報告引用的資料來源，包括教育部的中輟統計、監察院的調查報告、相關研究與新聞報導。
+
+以上是我的報告，謝謝大家，歡迎提問。` }
+];
+
+/* =====================================================================
+   DOM 與狀態
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag');
+const notes=$('.notes'), notesBtn=$('#notesBtn');
+const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
+const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isNarrow=()=>innerWidth<=820;
+let slideIdx=0, stepIdx=0, ready=false;
+$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
+
+const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
+
+/* =====================================================================
+   資訊卡渲染
+   ===================================================================== */
+function titleHTML(t){return t.split('<br>').map((l,i)=>`<span class="ln"><span style="--i:${i}">${l}</span></span>`).join('')}
+function groupHTML(g,i){
+  const pips=g.pip?`<div class="pips anim" style="--i:1">${[1,2,3,4,5].map(n=>`<i class="${n<=g.pip?'on':''}"></i>`).join('')}</div>`:'';
+  const body=(g.p?`<p class="anim" style="--i:3">${g.p}</p>`:'')+(g.li?`<ul class="facts">${g.li.map((x,j)=>`<li class="anim" style="--i:${j+3}"><span>${x}</span></li>`).join('')}</ul>`:'');
+  return`<div class="grp part ${g.row?'row':''} ${g.last?'last':''}" data-part="g${i}">${pips}<div class="k anim" style="--i:1">${g.k}</div><h4 class="anim" style="--i:2">${g.h}</h4>${body}</div>`;
+}
+function renderCard(s){
+  const n=SLIDES.indexOf(s)+1;
+  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const dek=s.dek?`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`:'';
+  const stats=s.stats?`<div class="stats part" data-part="stats">${s.stats.map((x,i)=>`<div class="stat anim ${x.warn?'warn':''}" style="--i:${i+3}"><b data-n="${x.n}">${x.n}</b><small>${x.u}</small><span>${x.l}</span></div>`).join('')}</div>`:'';
+  const groups=(s.groups||[]).map(groupHTML).join('');
+  const facts=s.facts?`<ul class="facts part ${s.id==='closing'||s.id==='sources'?'plain':''}" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
+  const quote=s.quote?`<blockquote class="quote part anim" data-part="quote" style="--i:3">${s.quote}</blockquote>`:'';
+  const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
+  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
+  const sources=s.sources?`<div class="sources anim" style="--i:8">${s.sources.map(x=>Array.isArray(x)?`<a href="${x[1]}" target="_blank" rel="noopener noreferrer">${x[0]}</a>`:`<span>${x}</span>`).join('')}</div>`:'';
+  card.innerHTML=`${head}${dek}${stats}${groups}${facts}${quote}${chips}${hint}${sources}`;
+}
+/* 大數字從 0 數上來 */
+function countUp(root){
+  root.querySelectorAll('.stat b[data-n]').forEach(el=>{
+    const raw=el.dataset.n, target=parseFloat(raw.replace(/,/g,'')), dec=(raw.split('.')[1]||'').length, comma=raw.includes(',');
+    if(reduced){el.textContent=raw;return}
+    const t0=performance.now(), dur=1400;
+    const tick=now=>{const k=Math.min(1,(now-t0)/dur), v=target*(1-Math.pow(1-k,3));
+      let s=v.toFixed(dec);if(comma)s=Number(s).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+      el.textContent=s;if(k<1)requestAnimationFrame(tick)};
+    requestAnimationFrame(tick);
+  });
+}
+function applyStep(s,step,animateParts){
+  const st=s.steps[step];
+  card.dataset.layout=st.layout;
+  card.querySelectorAll('.part').forEach(p=>{
+    const on=st.parts.includes(p.dataset.part), wasHidden=p.hidden;
+    p.hidden=!on;
+    if(on&&wasHidden&&animateParts){p.classList.remove('reveal');void p.offsetWidth;p.classList.add('reveal');if(p.dataset.part==='stats')countUp(p)}
+  });
+}
+
+let swapTimer=0;
+function go(i,step=0,instant=false){
+  i=Math.max(0,Math.min(SLIDES.length-1,i));
+  const s=SLIDES[i], changed=i!==slideIdx||!card.innerHTML;
+  slideIdx=i;stepIdx=Math.max(0,Math.min(s.steps.length-1,step));
+  if(changed){
+    card.classList.add('leaving');card.classList.remove('in');
+    clearTimeout(swapTimer);
+    swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0;if(!card.querySelector('.stats')?.hidden)countUp(card)},instant?0:420);
+  }else applyStep(s,stepIdx,true);
+  $('#cur').textContent=String(i+1).padStart(2,'0');
+  segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
+  history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
+  updateNotes();
+  if(ready){setShot(s,stepIdx,changed);applyPlan(false)}
+}
+function next(){const s=SLIDES[slideIdx];if(stepIdx<s.steps.length-1)go(slideIdx,stepIdx+1);else if(slideIdx<SLIDES.length-1)go(slideIdx+1,0)}
+function prev(){if(stepIdx>0)go(slideIdx,stepIdx-1);else if(slideIdx>0)go(slideIdx-1,SLIDES[slideIdx-1].steps.length-1)}
+
+/* 講稿面板與計時器 */
+const t0=performance.now();
+function updateNotes(){
+  const s=SLIDES[slideIdx];
+  $('#notesIdx').textContent=`${String(slideIdx+1).padStart(2,'0')} / ${String(SLIDES.length).padStart(2,'0')}　步驟 ${stepIdx+1}/${s.steps.length}`;
+  $('#notesTitle').textContent=s.title.replace(/<[^>]+>/g,'');
+  $('#notesBody').textContent=s.notes||'';
+  const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
+}
+setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
+function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
+notesBtn.onclick=toggleNotes;
+$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+$('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
+
+/* 鍵盤、滾輪、觸控 */
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
+  else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+});
+let wheelAcc=0,wheelLock=0;
+addEventListener('wheel',e=>{
+  if(e.target.closest('.notes .body'))return;
+  if(e.target.closest('.card')&&((e.deltaY>0&&card.scrollTop+card.clientHeight<card.scrollHeight-2)||(e.deltaY<0&&card.scrollTop>0)))return;
+  e.preventDefault();const now=performance.now();if(now<wheelLock)return;
+  wheelAcc+=e.deltaY;if(Math.abs(wheelAcc)>40){wheelAcc>0?next():prev();wheelAcc=0;wheelLock=now+900}
+},{passive:false});
+let touchY=null;
+addEventListener('touchstart',e=>{touchY=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{if(touchY==null)return;const d=touchY-e.changedTouches[0].clientY;if(Math.abs(d)>50)d>0?next():prev();touchY=null},{passive:true});
+$('#world').addEventListener('click',()=>{if(!isNarrow())next()});
+
+/* =====================================================================
+   three.js 場景：灰暗 ↔ 明亮 由 mood 控制
+   ===================================================================== */
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const canvas=$('#world');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.85;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const SKY={dark:new THREE.Color('#41464d'),bright:new THREE.Color('#b9d8ec')};
+scene.background=SKY.dark.clone();
+scene.fog=new THREE.FogExp2(SKY.dark.clone(),.011);
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.25;
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.2,2000);
+
+const hemi=new THREE.HemisphereLight(0x9aa3ad,0x2f3337,.6);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xa9b2bd,.6);sun.position.set(-30,60,40);sun.castShadow=true;
+Object.assign(sun.shadow.camera,{left:-60,right:60,top:45,bottom:-45,near:1,far:200});sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;
+scene.add(sun,sun.target);
+const LIGHT={hemiD:new THREE.Color(0x9aa3ad),hemiB:new THREE.Color(0xd8ecff),sunD:new THREE.Color(0xa9b2bd),sunB:new THREE.Color(0xfff0d2)};
+
+/* 後製：光暈 → 色調（灰階程度、暖色、暗角） */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.55,.4,1.0);composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const grade=new ShaderPass({
+  uniforms:{tDiffuse:{value:null},sat:{value:.2},warm:{value:0},vig:{value:.45}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float sat,warm,vig;varying vec2 vUv;
+    void main(){vec4 c=texture2D(tDiffuse,vUv);float l=dot(c.rgb,vec3(.2126,.7152,.0722));
+      vec3 g=mix(vec3(l),c.rgb,sat);g=mix(g*vec3(.96,.99,1.04),g*vec3(1.05,1.0,.93),warm);
+      float d=distance(vUv,vec2(.5));g*=1.-vig*smoothstep(.3,.9,d);gl_FragColor=vec4(g,c.a);}`});
+composer.addPass(grade);
+
+/* 地面外圍延伸，融入霧中 */
+const outer=new THREE.Mesh(new THREE.CircleGeometry(500,48),new THREE.MeshStandardMaterial({color:'#6f7f63',roughness:1}));
+outer.rotation.x=-Math.PI/2;outer.position.y=-.25;outer.receiveShadow=true;scene.add(outer);
+
+/* 雨絲：灰暗時才有 */
+const rain=(()=>{const n=1600,a=new Float32Array(n*6);
+  for(let i=0;i<n;i++){const x=(Math.random()-.5)*130,y=Math.random()*45,z=(Math.random()-.5)*90;a.set([x,y,z,x-.08,y-.9,z],i*6)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(a,3));
+  const m=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:'#c9d2dc',transparent:true,opacity:.3,depthWrite:false}));scene.add(m);return m})();
+
+/* 光點：明亮時在校園中飄浮 */
+const motes=(()=>{const n=160,a=new Float32Array(n*3);
+  for(let i=0;i<n;i++)a.set([(Math.random()-.5)*30,Math.random()*8+.5,(Math.random()-.5)*20],i*3);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(a,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({color:'#ffd27a',size:4,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false}));scene.add(m);return m})();
+
+/* 地面光環：支持網絡、技藝攤位 */
+function groundRing(r,color){const m=new THREE.Mesh(new THREE.RingGeometry(r*.92,r,64),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));m.rotation.x=-Math.PI/2;m.position.y=.12;scene.add(m);return m}
+const netRing=groundRing(2.9,'#ffb45e'), stallRing=groundRing(2.4,'#ffd27a');
+/* 雷達波紋：第一道防線 */
+const radar=[0,1,2].map(()=>groundRing(1,'#ffb45e'));
+
+/* 流光：沿弧線移動的光點 */
+class Flow{
+  constructor(a,b,color,lift,size=.09,count=7){
+    const mid=a.clone().add(b).multiplyScalar(.5);mid.y+=lift;
+    this.curve=new THREE.QuadraticBezierCurve3(a,mid,b);
+    const len=this.curve.getLength();
+    this.tube=new THREE.Mesh(new THREE.TubeGeometry(this.curve,48,size*.22,6),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false}));
+    this.dots=[...Array(count)].map(()=>new THREE.Mesh(new THREE.SphereGeometry(size,12,10),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,depthWrite:false})));
+    this.speed=Math.min(.5,4/len);this.a=0;
+    scene.add(this.tube,...this.dots);
+  }
+  update(t,on){
+    this.a+=((on?1:0)-this.a)*(still?1:.06);const vis=this.a>.01;
+    this.tube.visible=vis;this.tube.material.opacity=.45*this.a;
+    this.dots.forEach((d,i)=>{d.visible=vis;if(!vis)return;const u=(t*this.speed+i/this.dots.length)%1;this.curve.getPointAt(u,d.position);d.material.opacity=this.a*Math.sin(u*Math.PI);d.scale.setScalar(.6+.6*Math.sin(u*Math.PI))});
+  }
+}
+
+/* =====================================================================
+   場景中的位置（three 座標 [x, z]；Blender (x,y) → three (x, -y)）
+   ===================================================================== */
+const SP={houseDoor:[-30.3,2.3],yard:[-31.6,3.4],fence:[-31.6,4.9],hSide:[-31.6,10.8],
+  gateOut:[0,10.8],gateIn:[0,7.2],court:[0,3],corner:[-10.3,-2.2],
+  seatFront:[6.75,-4.4],seat:[6.75,-7.08],aisle:[5.68,-10],aisleF:[5.68,-4.4],tHome:[5.0,-10.9],
+  stall:[8,4.5],street:[9,10.8],sideCafe:[31,10.8],cafeDoor:[31,3.4],aptSide:[21.5,10.8],aptDoor:[22,-8.9],
+  ring:[0,5.2]};
+const SEATS=[[4.6,-7.08],[8.9,-7.08],[4.6,-8.58],[6.75,-8.58],[8.9,-8.58]];
+const COURT=[[-4,3],[-2.6,1.6],[3.2,.8],[4.6,3.8],[-6,-1],[1.2,-1.8]];
+const CLUSTER=[[4,1.2],[5.4,2.2],[3.5,3.2],[5.7,.4],[2.6,2.1],[4.9,3.7]];
+const CIRCLE=i=>{const a=i/7*Math.PI*2+.4;return[Math.cos(a)*2.4,2.2+Math.sin(a)*2.4]};
+const NET={kid:[0,5.2],teacher:[1.4,4.4],police:[-1.5,5.6],social:[.2,6.7]};
+
+/* 每頁每步，角色要走的路線：r = 路徑（第一點為起點）、face = 停下後面向、pose = sit / slump / sitSlump / wave */
+function planFor(id,st){
+  const p={};
+  const cls=(arr,o={})=>arr.forEach((q,i)=>p['同學_'+(i+1)]={r:[q],...o});
+  p['認輔老師']={r:[SP.tHome],face:[6.75,0]};
+  cls(COURT,{face:[0,14]});
+  switch(id){
+    case'cover':p['小樂']={r:[SP.gateIn],face:[0,20]};break;
+    case'news':
+      if(st<=1)p['小樂']={r:[SP.houseDoor],face:[-28,20]};
+      else if(st===2)p['小樂']={r:[SP.houseDoor,SP.yard,SP.fence,SP.hSide,SP.gateOut,SP.gateIn,SP.court],face:[0,20]};
+      else p['小樂']={r:[SP.court,SP.gateIn,SP.gateOut,SP.sideCafe,SP.cafeDoor],face:[31,0]};
+      break;
+    case'now':for(let i=1;i<=6;i++)p['同學_'+i]={loop:i};break;
+    case'family':p['小樂']={r:[SP.houseDoor],face:[-28,20],pose:'slump'};break;
+    case'school':
+      if(st<=1){cls(SEATS,{pose:'sit',face:[6.75,-20]});delete p['同學_6'];p['小樂']={r:[SP.seat],pose:st?'sitSlump':'sit',face:[6.75,-20]};}
+      else{
+        cls(CLUSTER,{face:[4.3,2.2]});
+        if(st===2)p['小樂']={r:[SP.seat,SP.seatFront,[0,-1.5],SP.corner],face:[4.3,2.2],pose:'slump'};
+        if(st===3){p['小樂']={r:[SP.corner],face:[-8.8,-1.4]};p['認輔老師']={r:[SP.tHome,SP.aisle,SP.aisleF,[-8.6,-1.5]],face:SP.corner}}
+        if(st===4){p['小樂']={r:[SP.corner,[-3,4.5],SP.gateIn],face:[0,20],pose:'slump'};p['認輔老師']={r:[[-8.6,-1.5],SP.aisleF,SP.aisle,SP.tHome],face:[6.75,0]}}
+        if(st>=5)p['小樂']={r:[SP.gateIn,SP.gateOut,SP.street],face:[30,10.8],pose:'slump'};
+      }
+      break;
+    case'society':
+      if(st===0)p['小樂']={r:[SP.street,SP.sideCafe,SP.cafeDoor],face:[31,0]};
+      else if(st===1)p['小樂']={r:[SP.cafeDoor],face:[32.4,5.2]};
+      else p['小樂']={r:[SP.cafeDoor,SP.sideCafe,SP.aptSide,SP.aptDoor],hideEnd:true};
+      if(st>=1)p['警察']={r:[[37.4,11.7],[32.4,5.2]],delay:st===1?1700:0,face:st===1?SP.cafeDoor:[22,-6]};
+      break;
+    case'defense':{
+      const kidHome=NET.kid;
+      if(st===0)p['小樂']={r:[SP.aptDoor,SP.aptSide,SP.gateOut,SP.gateIn,kidHome],face:[0,20],pose:'slump'};
+      else if(st<=3)p['小樂']={r:[kidHome],face:st>=2?NET.teacher:[0,20],pose:st===1?'slump':null};
+      else if(st===4)p['小樂']={r:[kidHome,[5.4,5.6],SP.stall],face:[8,2]};
+      else p['小樂']={r:[SP.stall,[5.3,4.6],SP.aisleF,SP.seatFront,SP.seat],pose:'sit',face:[6.75,-20]};
+      if(st<=1)p['認輔老師']={r:[SP.tHome,SP.aisle,SP.aisleF,[2.8,3.2]],face:kidHome};
+      else if(st<=3)p['認輔老師']={r:[[2.8,3.2],NET.teacher],face:kidHome};
+      else if(st===4)p['認輔老師']={r:[NET.teacher,[6.2,6]],face:[8,3]};
+      else p['認輔老師']={r:[[6.2,6],SP.aisleF,SP.aisle,SP.tHome],face:[6.75,0]};
+      if(st<=2)p['警察']={r:[[32.4,5.2]],face:[0,14]};
+      else if(st<=4)p['警察']={r:[[32.4,5.2],[32,10.8],SP.gateOut,SP.gateIn,NET.police],face:kidHome};
+      else p['警察']={r:[NET.police,[-2.2,7.4]],face:[6.75,-6]};
+      if(st===3||st===4)p['社工']={r:[[13,10.8],SP.gateOut,SP.gateIn,NET.social],face:kidHome};
+      else if(st>=5)p['社工']={r:[NET.social,[2,7.6]],face:[6.75,-6]};
+      if(st>=5){cls(SEATS,{pose:'sit',face:[6.75,-20]});delete p['同學_6']}else cls(CLUSTER,{face:NET.kid});
+      break;}
+    case'closing':case'sources':
+      p['小樂']={r:[CIRCLE(0)],face:[0,2.2],pose:'wave'};
+      for(let i=1;i<=6;i++)p['同學_'+i]={r:[CIRCLE(i)],face:[0,2.2],pose:i%2?'wave':null};
+      p['認輔老師']={r:[[4.4,6]],face:[0,2.2]};
+      break;
+  }
+  return p;
+}
+/* 「現況」頁循環：孩子走回校門，其中一半又轉身離開 */
+function loopPath(i){
+  const x=-1.8+(i-1)*.72, inside=[x*2.2,2.6-(i%3)*1.4];
+  const back=i%2===0;
+  return{pts:[[-18+i*1.6,10.8],[x,10.8],[x,7],inside,...(back?[[x,7],[x,10.8],[18+i,10.8]]:[])].map(([a,b])=>V(a,0,b)),back,off:(i-1)*1.9};
+}
+const LOOP_T=15;
+
+/* =====================================================================
+   載入模型
+   ===================================================================== */
+let city=null;const flows={};const named={},boxes={};
+const P=name=>actors[name]?actors[name].o.position.clone().add(V(0,2,0)):named[name]?.clone()??V(0,5,0);
+const actors={};const fx={car:null,carLights:[],mats:{}};
+
+const manager=new THREE.LoadingManager();
+manager.onProgress=(u,l,t)=>{const p=Math.round(l/t*100);$('.loader-bar i').style.width=p+'%';$('#loadPct').textContent=`LOADING 3D SCENE · ${p}%`};
+const loader=new GLTFLoader(manager);
+loader.loadAsync('assets/models/斷在學校.glb').then(g=>{
+  city=g.scene;scene.add(city);
+  const tuned=new Set();
+  city.traverse(o=>{
+    if(!o.isMesh)return;
+    o.castShadow=!/地面|道路|中庭|人行道|光|燈/.test(o.name);o.receiveShadow=true;
+    const m=o.material;if(tuned.has(m))return;tuned.add(m);
+    m.envMapIntensity=.7;
+    if(m.emissiveIntensity>0){fx.mats[m.name]=m;m.userData.base=m.emissiveIntensity;m.emissiveIntensity*=.5}
+  });
+  city.updateMatrixWorld(true);
+  for(const o of city.children){const b=new THREE.Box3().setFromObject(o);boxes[o.name]=b;named[o.name]=b.getCenter(new THREE.Vector3())}
+  // 角色：腳與手是子物件，原點在關節
+  for(const name of['小樂','警察','認輔老師','社工','同學_1','同學_2','同學_3','同學_4','同學_5','同學_6']){
+    const o=city.getObjectByName(name);if(!o)continue;
+    o.rotation.order='YXZ';
+    actors[name]={o,legL:o.getObjectByName(name+'_左腳'),legR:o.getObjectByName(name+'_右腳'),armL:o.getObjectByName(name+'_左手'),armR:o.getObjectByName(name+'_右手'),
+      route:null,start:0,speed:3,vis:0,visT:0,yaw:0,face:null,pose:null,phase:Math.random()*6,hideEnd:false,loop:0};
+  }
+  fx.car=city.getObjectByName('警車');fx.carBase=fx.car.position.clone();
+  fx.carLights=[city.getObjectByName('警車_紅燈'),city.getObjectByName('警車_藍燈')].map(o=>o.material);
+  buildFlows();
+  ready=true;
+  setShot(SLIDES[slideIdx],stepIdx,true,true);applyPlan(true);
+  $('.loader').classList.add('done');
+}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請雙擊資料夾內的「server.bat」以本機伺服器開啟，並確認網路可連至 Three.js CDN。<br><small>'+e.message+'</small>';el.classList.add('show')});
+
+function buildFlows(){
+  const amber='#ffb45e', at=([x,z],y=1.9)=>V(x,y,z);
+  const {kid,teacher,police,social}=NET;
+  flows.net=[new Flow(at(teacher),at(kid),amber,1.2,.07,5),new Flow(at(police),at(kid),amber,1.2,.07,5),new Flow(at(social),at(kid),amber,1.2,.07,5),
+             new Flow(at(police),at(social),amber,1.6,.06,5),new Flow(at(social),at(teacher),amber,1.6,.06,5),
+             new Flow(V(-1,9.6,-6.5),at(kid,2.1),amber,4,.1,8)];
+}
+
+/* 套用本頁的角色走位 */
+function applyPlan(instant){
+  const s=SLIDES[slideIdx], plan=planFor(s.id,stepIdx), now=performance.now();
+  for(const [name,a] of Object.entries(actors)){
+    const spec=plan[name];
+    a.loop=0;
+    if(!spec){a.visT=0;a.route=null;continue}
+    if(spec.loop){a.loop=spec.loop;a.route=null;a.pose=null;a.visT=1;continue}
+    const pts=spec.r.map(([x,z])=>V(x,0,z)), end=pts[pts.length-1];
+    a.pose=spec.pose||null;a.face=spec.face?V(spec.face[0],0,spec.face[1]):null;a.hideEnd=!!spec.hideEnd;
+    if(instant||reduced){
+      a.o.position.copy(end);a.route=null;a.visT=a.vis=a.hideEnd?0:1;
+      const d=a.face?a.face.clone().sub(end):(pts.length>1?end.clone().sub(pts[pts.length-2]):V(0,0,1));a.yaw=Math.atan2(d.x,d.z);
+      continue;
+    }
+    if(a.o.position.distanceTo(end)<.3&&a.vis>.5){a.route=null;a.visT=a.hideEnd?0:1;continue}
+    if(a.vis<.05||a.o.position.distanceTo(pts[0])>.6){a.o.position.copy(pts[0]);a.vis=0}   // 不在起點：原地淡入
+    a.route=pts.slice(1);if(!a.route.length)a.route=null;
+    a.visT=1;a.start=now+(spec.delay||0);
+    let L=0,prevP=pts[0];for(const q of pts.slice(1)){L+=q.distanceTo(prevP);prevP=q}
+    a.speed=Math.max(2.4,L/5.5);
+  }
+}
+
+/* =====================================================================
+   鏡頭：每頁每步一個鏡位，換頁時沿弧線補間
+   ===================================================================== */
+function shotFor(s,st){
+  switch(s.id){
+    case'cover':return{pos:V(30,22,46),tgt:V(-2,3,2),orbit:true};
+    case'news':return[{pos:V(-8,34,60),tgt:V(-4,1,2)},{pos:V(-21,6.5,15),tgt:V(-30,2.6,0)},{pos:V(9,13,28),tgt:V(0,1.5,1)},{pos:V(21,8,24),tgt:V(30,2,2)},{pos:V(4,40,64),tgt:V(2,0,0)}][st];
+    case'now':return st===0?{pos:V(-9,11,28),tgt:V(0,1.5,5)}:st===1?{pos:V(-14,15,34),tgt:V(0,1.5,4)}:{pos:V(-4,8,24),tgt:V(1,1.5,4)};
+    case'family':return[{pos:V(-21,6,15),tgt:V(-30,2.8,-.5)},{pos:V(-22,4,11),tgt:V(-28.5,2,1.5)},{pos:V(-19,10,20),tgt:V(-31,3,0)}][st];
+    case'school':
+      if(st<=1)return{pos:V(9.6,3.6,3.4),tgt:V(6.5,1,-8)};
+      if(st<=3)return{pos:V(2,10,19),tgt:V(-3.5,1,-.5)};
+      if(st<=5)return{pos:V(11,7,22),tgt:V(2,1,7)};
+      return{pos:V(-6,12,26),tgt:V(1,1.5,3)};
+    case'society':return[{pos:V(18,8,27),tgt:V(29,2,5)},{pos:V(37,9,30),tgt:V(35.5,1.2,8)},{pos:V(12,10,22),tgt:V(23,4,-3)},{pos:V(4,30,50),tgt:V(18,2,2)}][st];
+    case'defense':return[{pos:V(4,16,34),tgt:V(4,1,3)},{pos:V(-6,7,17),tgt:V(.8,1,4)},{pos:V(-4.5,3.4,-1.2),tgt:V(.8,1.2,5.2)},{pos:V(-6,7,-3.5),tgt:V(.2,1,5.6)},{pos:V(-2.5,5,6.5),tgt:V(8,1.2,3.4)},{pos:V(9.6,3.6,3.4),tgt:V(6.5,1,-8)}][st];
+    case'closing':return{pos:V(20,13,26),tgt:V(1,2,1),orbit:true};
+    case'sources':return{pos:V(-6,42,66),tgt:V(2,0,0)};
+  }
+}
+function offsetFor(layout){if(isNarrow())return{x:0,y:.2};return layout==='left'||layout==='hero'?{x:-.17,y:0}:layout==='right'?{x:.17,y:0}:layout==='bottom'?{x:0,y:.2}:{x:0,y:0}}
+const cam={from:V(0,0,0),fromT:V(0,0,0),to:V(0,0,0),toT:V(0,0,0),tgt:V(0,0,0),start:0,dur:1,lift:0,orbit:false,off:{x:0,y:0},offNow:{x:0,y:0}};
+function setShot(s,step,slideChanged,instant=false){
+  const sh=shotFor(s,step);
+  cam.from.copy(camera.position);cam.fromT.copy(cam.tgt);
+  cam.to.copy(sh.pos);cam.toT.copy(sh.tgt);cam.orbit=!!sh.orbit;
+  const dist=cam.from.distanceTo(cam.to);
+  cam.dur=instant||reduced?1:THREE.MathUtils.clamp(900+dist*14,1200,2600);
+  cam.lift=dist>40?Math.min(30,dist*.2):dist*.15;
+  cam.start=performance.now();
+  cam.off=offsetFor(s.steps[step].layout);
+  if(instant){camera.position.copy(sh.pos);cam.tgt.copy(sh.tgt);cam.offNow={...cam.off}}
+}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const moodTarget=()=>{const s=SLIDES[slideIdx];return Array.isArray(s.mood)?s.mood[stepIdx]:s.mood};
+let mood=moodTarget();
+
+/* =====================================================================
+   每一幀
+   ===================================================================== */
+const tmp=new THREE.Vector3(), clock=new THREE.Clock();
+function project(v){tmp.copy(v).project(camera);return{x:(tmp.x*.5+.5)*innerWidth,y:(-tmp.y*.5+.5)*innerHeight,ok:tmp.z>-1&&tmp.z<1}}
+const angLerp=(a,b,k)=>{let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return a+d*k};
+function samplePath(pts,dist){
+  for(let i=1;i<pts.length;i++){const L=pts[i].distanceTo(pts[i-1]);if(dist<=L)return{p:pts[i-1].clone().lerp(pts[i],L?dist/L:1),d:pts[i].clone().sub(pts[i-1]),moving:true};dist-=L}
+  const n=pts.length;return{p:pts[n-1].clone(),d:pts[n-1].clone().sub(pts[n-2]),moving:false};
+}
+function pathLen(pts){let L=0;for(let i=1;i<pts.length;i++)L+=pts[i].distanceTo(pts[i-1]);return L}
+
+function updateActor(a,t,dt,now){
+  let moving=false,yawT=a.yaw;
+  if(a.loop){
+    // 現況頁：循環走位
+    const lp=a.lp||(a.lp=loopPath(a.loop)), L=pathLen(lp.pts), sp=3.2;
+    const tc=((t+lp.off)%LOOP_T), dist=tc*sp, r=samplePath(lp.pts,dist);
+    a.o.position.copy(r.p);moving=r.moving;yawT=Math.atan2(r.d.x,r.d.z);
+    if(!moving&&!lp.back)yawT=Math.atan2(0-r.p.x,14-r.p.z);
+    const fadeIn=Math.min(1,tc/.6), fadeOut=lp.back?Math.min(1,Math.max(0,(L-dist)/2)):Math.min(1,(LOOP_T-tc)/.6);
+    a.visT=a.vis=Math.min(fadeIn,fadeOut);
+  }else if(a.route&&now>=a.start){
+    const tgt=a.route[0], d=tgt.clone().sub(a.o.position);d.y=0;const dist=d.length(), step=a.speed*dt;
+    if(dist<=step){a.o.position.copy(tgt);a.route.shift();if(!a.route.length){a.route=null;if(a.hideEnd)a.visT=0}}
+    else a.o.position.addScaledVector(d.normalize(),step);
+    if(dist>.01)yawT=Math.atan2(d.x,d.z);moving=true;
+  }else if(a.face){const d=a.face.clone().sub(a.o.position);yawT=Math.atan2(d.x,d.z)}
+  a.yaw=still?yawT:angLerp(a.yaw,yawT,Math.min(1,dt*8));
+  a.o.rotation.y=a.yaw;
+  // 淡入淡出（縮放）
+  if(!a.loop)a.vis+=(a.visT-a.vis)*(still?1:Math.min(1,dt*6));
+  const sc=Math.max(.001,a.vis);a.o.scale.setScalar(sc);a.o.visible=a.vis>.02;
+  // 肢體
+  let legX=0,armXL=0,armXR=0,armZL=0,armZR=0,tilt=0,y=0;
+  if(moving){a.phase+=dt*(a.loop?3.2:a.speed)*3.4;const s=Math.sin(a.phase);legX=s*.65;armXL=-s*.55;armXR=s*.55;y=Math.abs(Math.cos(a.phase))*.05;if(a.pose==='slump')tilt=.12}
+  else{
+    const br=Math.sin(t*2+a.phase)*.04;armZL=-.06-br;armZR=.06+br;
+    if(a.pose==='sit'||a.pose==='sitSlump'){legX=-1.45;armXL=armXR=-1.0;y=-.02;if(a.pose==='sitSlump'){tilt=.38;armXL=armXR=-1.3}}
+    else if(a.pose==='slump'){tilt=.2;armZL=-.02;armZR=.02}
+    else if(a.pose==='wave'){armZL=-2.5-Math.sin(t*5+a.phase)*.35;armZR=2.5+Math.sin(t*5+a.phase+1)*.35;y=Math.abs(Math.sin(t*3+a.phase))*.12}
+  }
+  const k=still?1:Math.min(1,dt*10);
+  const L=(o,x,z)=>{if(!o)return;o.rotation.x+=(x-o.rotation.x)*k;o.rotation.z+=(z-o.rotation.z)*k};
+  if(moving){a.legL&&(a.legL.rotation.x=legX);a.legR&&(a.legR.rotation.x=-legX);a.armL&&(a.armL.rotation.x=armXL,a.armL.rotation.z=-.06);a.armR&&(a.armR.rotation.x=armXR,a.armR.rotation.z=.06)}
+  else{L(a.legL,legX,0);L(a.legR,legX,0);L(a.armL,armXL,armZL);L(a.armR,armXR,armZR)}
+  a.o.rotation.x+=(tilt-a.o.rotation.x)*k;a.o.position.y=y;
+}
+
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,clock.getDelta()), t=still?0:clock.elapsedTime, now=performance.now();
+  if(!ready){composer.render();return}
+  const s=SLIDES[slideIdx], st=stepIdx;
+
+  // 鏡頭補間（二次貝茲弧線）＋待機微晃
+  const k=Math.min(1,(now-cam.start)/cam.dur), e=ease(k);
+  const mid=cam.from.clone().lerp(cam.to,.5);mid.y+=cam.lift;
+  const p=cam.from.clone().multiplyScalar((1-e)**2).add(mid.multiplyScalar(2*(1-e)*e)).add(cam.to.clone().multiplyScalar(e*e));
+  cam.tgt.lerpVectors(cam.fromT,cam.toT,e);
+  if(cam.orbit&&k>=1&&!still){const cx=cam.toT.x,cz=cam.toT.z,r=Math.hypot(cam.to.x-cx,cam.to.z-cz),a0=Math.atan2(cam.to.z-cz,cam.to.x-cx),a=a0+(now-cam.start-cam.dur)*.00004;p.set(cx+Math.cos(a)*r,cam.to.y,cz+Math.sin(a)*r)}
+  const sway=reduced?0:Math.min(1,k)*.08;
+  p.x+=Math.sin(t*.31)*sway;p.y+=Math.sin(t*.23)*sway*.5;
+  camera.position.copy(p);camera.lookAt(cam.tgt);
+  const ok=still?1:.05;cam.offNow.x+=(cam.off.x-cam.offNow.x)*ok;cam.offNow.y+=(cam.off.y-cam.offNow.y)*ok;
+  camera.setViewOffset(innerWidth,innerHeight,cam.offNow.x*innerWidth,cam.offNow.y*innerHeight,innerWidth,innerHeight);
+
+  // 光景：mood 0 灰暗 → 1 明亮
+  const mt=moodTarget();mood+=(mt-mood)*(still?1:Math.min(1,dt*1.1));
+  const m=mood, mm=m*m*(3-2*m);
+  document.documentElement.dataset.mood=mt>=.8?'bright':'dark';
+  scene.background.copy(SKY.dark).lerp(SKY.bright,mm);scene.fog.color.copy(scene.background);scene.fog.density=.011-.0065*mm;
+  outer.material.color.set('#5d6458').lerp(new THREE.Color('#86a46a'),mm);
+  hemi.color.copy(LIGHT.hemiD).lerp(LIGHT.hemiB,mm);hemi.intensity=.6+.75*mm;
+  sun.color.copy(LIGHT.sunD).lerp(LIGHT.sunB,mm);sun.intensity=.6+2.1*mm;
+  renderer.toneMappingExposure=.82+.2*mm;scene.environmentIntensity=.25+.25*mm;
+  grade.uniforms.sat.value=.16+.9*mm;grade.uniforms.warm.value=mm;grade.uniforms.vig.value=.5-.32*mm;
+  bloom.strength=.55-.25*mm;bloom.threshold=1+.3*mm;
+  rain.material.opacity=.32*(1-mm);rain.visible=mm<.98;
+  if(!still&&rain.visible){const a=rain.geometry.attributes.position.array;for(let i=0;i<a.length;i+=6){let y=a[i+1]-dt*26;if(y<0)y+=45;a[i+1]=y;a[i+4]=y-.9}rain.geometry.attributes.position.needsUpdate=true}
+  motes.material.opacity=.85*Math.max(0,mm-.35)/.65;motes.visible=mm>.36;
+  if(motes.visible){const a=motes.geometry.attributes.position.array;for(let i=0;i<a.length;i+=3){a[i+1]+=dt*.35;if(a[i+1]>9)a[i+1]=.5}motes.geometry.attributes.position.needsUpdate=true;motes.rotation.y=t*.02}
+
+  // 發光材質：家的窗忽明忽滅、教室燈隨 mood 亮起、繭居窗光、網咖霓虹
+  const M=fx.mats;
+  if(M['家_窗光'])M['家_窗光'].emissiveIntensity=(Math.sin(t*13)>.55||Math.sin(t*2.7)>.85)?.08:.75;
+  if(M['教室燈'])M['教室燈'].emissiveIntensity=.15+1.1*mm;
+  if(M['繭居窗光']){const on=(s.id==='society'&&st>=2)||(s.id==='defense'&&st===0);M['繭居窗光'].emissiveIntensity+=((on?1.6+Math.sin(t*9)*.25:.12)-M['繭居窗光'].emissiveIntensity)*.08}
+  if(M['霓虹'])M['霓虹'].emissiveIntensity=(Math.sin(t*17)>.92?.6:2.4)*(1-.5*mm);
+
+  // 警車：社會頁開進來，警示燈閃爍
+  if(fx.car){
+    const parked=(s.id==='society'&&st>=1)||(s.id==='defense'&&st<=4);
+    const tx=parked?39.5:64;fx.car.position.x+=(tx-fx.car.position.x)*(still?1:Math.min(1,dt*1.3));fx.car.visible=fx.car.position.x<52;
+    const flash=s.id==='society'&&st>=1, ph=Math.floor(t*6)%2;
+    fx.carLights[0].emissiveIntensity=flash?(ph?6:.2):.2;fx.carLights[1].emissiveIntensity=flash?(ph?.2:6):.2;
+  }
+
+  // 角色
+  for(const a of Object.values(actors))updateActor(a,t,dt,now);
+
+  // 五道防線特效
+  const D=s.id==='defense';
+  const tch=actors['認輔老師']?.o.position;
+  radar.forEach((r,i)=>{const on=D&&st===1&&k>.6;const u=((t*.45+i/3)%1);r.position.set(tch.x,.12,tch.z);r.scale.setScalar(1+u*7);r.material.opacity=on?(1-u)*.7:0;r.visible=on});
+  const netOn=(D&&st===3)||s.id==='closing';
+  netRing.position.set(s.id==='closing'?0:SP.ring[0],.12,s.id==='closing'?2.2:SP.ring[1]);
+  netRing.material.opacity+=((netOn?.75:0)-netRing.material.opacity)*.06;netRing.visible=netRing.material.opacity>.01;netRing.scale.setScalar(1+Math.sin(t*2)*.03);
+  stallRing.position.set(8,.12,3.2);stallRing.material.opacity+=((D&&st===4?.8:0)-stallRing.material.opacity)*.06;stallRing.visible=stallRing.material.opacity>.01;stallRing.scale.setScalar(1+Math.sin(t*3)*.05);
+  flows.net?.forEach(f=>f.update(t,D&&st===3));
+
+  // 指引線與標籤（鏡頭到位後才出現）
+  const stp=s.steps[st], focus=stp.focus??s.focus, ftag=stp.tag??s.tag;
+  const fa=focus&&actors[focus];
+  if(focus&&k>.92&&!isNarrow()&&(!fa||fa.vis>.5)){
+    const sp=project(P(focus)),r=card.getBoundingClientRect();
+    if(sp.ok&&sp.x>0&&sp.x<innerWidth&&sp.y>0&&sp.y<innerHeight){
+      const leftSide=sp.x>r.right, ax=leftSide?r.right:r.left, ay=THREE.MathUtils.clamp(sp.y,r.top+40,r.bottom-40);
+      const cx=(ax+sp.x)/2;
+      leaderPath.setAttribute('d',`M${ax},${ay} C${cx},${ay} ${cx},${sp.y} ${sp.x},${sp.y}`);
+      leaderDot.setAttribute('cx',sp.x);leaderDot.setAttribute('cy',sp.y);leaderRing.setAttribute('cx',sp.x);leaderRing.setAttribute('cy',sp.y);
+      leader.classList.add('show');
+      tag.textContent=ftag;tag.style.transform=`translate(${sp.x+(leftSide?18:-18-tag.offsetWidth)}px,${sp.y-44}px)`;tag.classList.add('show');
+    }else{leader.classList.remove('show');tag.classList.remove('show')}
+  }else{leader.classList.remove('show');tag.classList.remove('show')}
+
+  composer.render();
+}
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);if(ready)cam.off=offsetFor(SLIDES[slideIdx].steps[stepIdx].layout)});
+
+/* 啟動：支援網址 #頁碼.步驟 */
+const [hashSlide,hashStep]=location.hash.slice(1).split('.');
+const startAt=Math.max(0,Math.min(SLIDES.length-1,(parseInt(hashSlide)||1)-1));
+go(startAt,(parseInt(hashStep)||1)-1,true);
+mood=moodTarget();
+camera.position.set(30,22,46);cam.tgt.set(-2,3,2);
+frame();
+</script>
+</body>
+</html>
