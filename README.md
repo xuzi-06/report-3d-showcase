@@ -68,7 +68,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 ## 為什麼不用伺服器也能跑
 
 瀏覽器禁止 `file://` 頁面用 fetch 讀取本機檔案，舊版因此需要 Python 伺服器。新版的做法：
-- three.js 與用到的 addons 預先打包成 `assets/vendor/three.bundle.min.js`（IIFE，掛在 `window.THREE`／`window.THREE_ADDONS`），不再透過 CDN 用 import 載入
+- three.js 與用到的 addons 預先打包成 `vendor/three.bundle.min.js`，放在每個範本資料夾內，整個資料夾可直接帶到別台電腦（IIFE，掛在 `window.THREE`／`window.THREE_ADDONS`），不再透過 CDN 用 import 載入
 - GLB 轉成 base64 的 `.glb.js`，用 `<script src>` 載入後交給 `GLTFLoader.parseAsync` 解析
 - `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，三份範例打包後約 1.8～3.6MB
 
@@ -78,9 +78,9 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 report-3d-showcase/
 ├─ SKILL.md                    # Skill 主說明（Claude 讀這份）
 ├─ assets/
-│  ├─ vendor/                  # three.js 離線打包檔（three@0.169.0 + addons）、打包入口與授權
+│  ├─ vendor/                  # three.js 打包入口（重新打包用）與授權
 │  ├─ 文案範本.md               # 給使用者填寫的文案格式
-│  ├─ example/                 # 淺色生活風範例
+│  ├─ example/                 # 淺色生活風範例（每個範例資料夾都含 main.html、vendor/three.bundle.min.js、assets/models/）
 │  ├─ example-dark/            # 夜景霓虹風範例
 │  └─ example-story/           # 灰暗→明亮敘事風範例（角色動畫）
 ├─ references/
@@ -101,4 +101,4 @@ report-3d-showcase/
 
 ## 授權
 
-範例中的文案與模型屬於原報告作者；範本程式碼可自由修改使用。`assets/vendor/three.bundle.min.js` 內含 [three.js](https://threejs.org/)（MIT，見 `assets/vendor/three.LICENSE.txt`）。
+範例中的文案與模型屬於原報告作者；範本程式碼可自由修改使用。各範例的 `vendor/three.bundle.min.js` 內含 [three.js](https://threejs.org/)（MIT，見 `assets/vendor/three.LICENSE.txt`）。

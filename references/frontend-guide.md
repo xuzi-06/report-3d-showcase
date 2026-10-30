@@ -3,7 +3,7 @@
 範例是一份完整可用的 3D 互動簡報（13 頁，「資通訊科技與住」）。新專案**複製它再改內容**，比從零寫快且穩定。單一 HTML 檔，不使用 CDN 或 importmap：
 
 ```html
-<script src="vendor/three.bundle.min.js"></script>        <!-- 範本裡是 ../vendor/，複製到專案後改成 vendor/ -->
+<script src="vendor/three.bundle.min.js"></script>        <!-- 範本資料夾內附，連同 vendor/ 一起複製到專案，路徑不用改 -->
 <script src="assets/models/智慧住宅.glb.js"></script>      <!-- build.ps1 由 GLB 產生，每個模型一行 -->
 <script type="module">
 const THREE=window.THREE;
@@ -14,7 +14,7 @@ const loadGLB=name=>{...};                                // 解 base64 → load
 loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader.loadAsync('assets/models/….glb')
 ```
 
-`window.THREE_ADDONS` 提供：GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass。需要其他 addon（例如 OrbitControls）時，把它加進 `assets/vendor/three.bundle.entry.js`，在暫存資料夾執行 `npm i three@0.169.0 esbuild` 和 `npx esbuild three.bundle.entry.js --bundle --minify --format=iife --outfile=three.bundle.min.js`，再覆蓋 vendor 檔。不要改回 `import ... from 'three/addons/...'`，那樣離線就打不開了。
+`window.THREE_ADDONS` 提供：GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass。需要其他 addon（例如 OrbitControls）時，把它加進 `assets/vendor/three.bundle.entry.js`，在暫存資料夾執行 `npm i three@0.169.0 esbuild` 和 `npx esbuild three.bundle.entry.js --bundle --minify --format=iife --outfile=three.bundle.min.js`，再覆蓋三個範本的 `vendor/three.bundle.min.js`（`assets/example*/vendor/`）。不要改回 `import ... from 'three/addons/...'`，那樣離線就打不開了。
 
 ## 檔案結構（行號為範例檔大約位置）
 

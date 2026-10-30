@@ -8,7 +8,7 @@ description: 把使用者提供的報告文案／講稿／大綱，做成一套�
 把**使用者的報告文案**做成：**Blender 模型 (GLB) → three.js 互動簡報 `main.html` → 打包成單一 HTML（`dist/<標題>.html`）**。
 
 **交付的硬性要求：播放端零環境。** 報告用的電腦（學校、教室、別人的筆電）只要有 Chrome 或 Edge，雙擊 HTML 就要能完整播放，離線也行。成品不得依賴 Python、Blender、Node、本機伺服器、.bat、CDN 或任何安裝。Blender、PowerShell 只在**製作端**（你這邊）使用。
-- three.js 用 skill 內附的離線打包檔 `assets/vendor/three.bundle.min.js`（three@0.169.0，含 GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass，掛在 `window.THREE`／`window.THREE_ADDONS`）。**不可**再用 importmap 或 CDN 的 `import`。需要清單外的 addon 時，依 `assets/vendor/three.bundle.entry.js` 用 esbuild 重新打包（只有製作端需要 Node）。
+- three.js 用每個範本資料夾內附的離線打包檔 `vendor/three.bundle.min.js`（three@0.169.0，含 GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass，掛在 `window.THREE`／`window.THREE_ADDONS`）。**不可**再用 importmap 或 CDN 的 `import`。每個範本資料夾（`main.html`、`vendor/`、`assets/models/`）都自成一體，整個資料夾複製到別台電腦也能直接雙擊開啟。需要清單外的 addon 時，依 `assets/vendor/three.bundle.entry.js` 用 esbuild 重新打包（只有製作端需要 Node）。
 - 模型由 `scripts/build.ps1` 轉成 base64 的 `*.glb.js`，以 `<script src>` 載入，再用 `loadGLB('名稱')` 解析。`file://` 不能 fetch，但可以載入 `<script src>`，所以開發版 `main.html` 也能直接雙擊預覽。
 - 字型：Google Fonts 只是加分項，`--sans`／`--mono`／`--serif` 一定要有系統後備字型（微軟正黑體、Consolas、新細明體），離線時版面才不會跑掉。
 
@@ -54,7 +54,7 @@ description: 把使用者提供的報告文案／講稿／大綱，做成一套�
 分批建模、每批截圖檢查。報告中要特寫的每個物件取唯一中文名稱（前端靠名稱定位），多樓層外牆加 `cutaway` 自訂屬性。匯出 GLB 到 `<專案>/assets/models/`。單一 HTML 會內嵌模型（base64 約為原大小的 1.33 倍），所以 GLB 盡量控制在 5MB 以內：貼圖用 1024px 以下，能用材質顏色就不要用貼圖。
 
 ### 4. 建立互動前端 `main.html`
-讀 `references/frontend-guide.md`。把範本的 `main.html` 複製到專案根目錄，並把 `assets/vendor/three.bundle.min.js` 複製到 `<專案>/vendor/three.bundle.min.js`。範本裡的 `<script src="../vendor/three.bundle.min.js">` 要改成 `vendor/three.bundle.min.js`，每個模型一行 `<script src="assets/models/<名稱>.glb.js">`。依主題選範本——淺色／生活類用 `assets/example/main.html`，科技／未來類用 `assets/example-dark/main.html`（夜景、霓虹光暈、車流與無人機動畫），社會議題／故事敘事類用 `assets/example-story/main.html`（角色走位、灰階→明亮氛圍轉換）：
+讀 `references/frontend-guide.md`。把選定範本的 `main.html` 與 `vendor/` 資料夾一起複製到專案根目錄（得到 `<專案>/main.html`、`<專案>/vendor/three.bundle.min.js`），**不要**複製範本的 `assets/models/`。`main.html` 已用 `<script src="vendor/three.bundle.min.js">`，路徑不用改；把範本的模型 script 換成自己的，每個模型一行 `<script src="assets/models/<名稱>.glb.js">`。所有檔案都必須在專案資料夾內，不可用 `../` 指向資料夾外。依主題選範本——淺色／生活類用 `assets/example/main.html`，科技／未來類用 `assets/example-dark/main.html`（夜景、霓虹光暈、車流與無人機動畫），社會議題／故事敘事類用 `assets/example-story/main.html`（角色走位、灰階→明亮氛圍轉換）：
 - `SLIDES`：**整個陣列換成使用者文案**（逐頁對應：標題→`title`、說明→`dek`、條列→`facts`、圖解→`diagram` 的 flow/cols、分幾步→`steps`、參考資料→`sources`、講稿→`notes`），不要保留範本的任何一頁文字
 - GLB 路徑、`DEVICES` 名稱、`buildFlows()` 資料流、`shotFor()` 每頁鏡位
 - 依主題調 `:root` 配色，刪除不相關的專屬特效（例如地政紅點、資料邊界罩）
@@ -77,7 +77,7 @@ powershell -ExecutionPolicy Bypass -File <skill>/scripts/build.ps1 -Project <專
    ```
    讀 `contact-sheet.png`，逐頁檢查：3D 是否載入（沒有出現「3D 模型無法載入」）、曝光（是否洗白）、鏡頭是否在建築內或被遮擋、指引線是否指到 `focus` 物件、卡片是否擋住主體。有問題就修，然後重新 build 再截一次。
 2. 離線驗證：用無頭 Edge 加上 `--proxy-server=127.0.0.1:9`（把網路全部導到不通的代理）截一頁，確認 3D 仍正常、字型改用系統字後版面沒有跑掉。
-3. 只交付 `dist/` 的 HTML。`vendor/`、`assets/models/`、`main.html` 是製作用的原始檔。
+3. 主要交付 `dist/` 的單一 HTML。專案資料夾本身（`main.html` + `vendor/` + `assets/models/`）也自成一體，整個資料夾複製到別台電腦同樣能雙擊開啟，方便之後再修改。
 4. 若使用者需要，依範例的 `簡報講稿.md` 格式輸出講稿（每頁標題、時長估算、講稿、`【按 → 下一步】` 標記）。
 
 5. 文案核對：逐頁比對 `SLIDES` 與使用者文案，確認沒有漏頁、沒有被改寫的句子、沒有混入範本的舊文字（例如搜尋範本專屬詞「智慧住宅」「未來城市」）。
