@@ -2,3 +2,5 @@
 *.bat -text
 *.glb binary
 *.blend binary
+*.glb.js -diff linguist-generated
+assets/vendor/*.min.js -diff linguist-vendored

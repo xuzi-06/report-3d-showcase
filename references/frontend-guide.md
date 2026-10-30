@@ -1,6 +1,20 @@
 # main.html 架構說明（以 assets/example/main.html 為範本）
 
-範例是一份完整可用的 3D 互動簡報（13 頁，「資通訊科技與住」）。新專案**複製它再改內容**，比從零寫快且穩定。單一 HTML 檔、無建置步驟，three.js 由 CDN 以 importmap 載入（`three@0.169.0`）。
+範例是一份完整可用的 3D 互動簡報（13 頁，「資通訊科技與住」）。新專案**複製它再改內容**，比從零寫快且穩定。單一 HTML 檔，不使用 CDN 或 importmap：
+
+```html
+<script src="vendor/three.bundle.min.js"></script>        <!-- 範本裡是 ../vendor/，複製到專案後改成 vendor/ -->
+<script src="assets/models/智慧住宅.glb.js"></script>      <!-- build.ps1 由 GLB 產生，每個模型一行 -->
+<script type="module">
+const THREE=window.THREE;
+const {GLTFLoader,RoomEnvironment}=window.THREE_ADDONS;   // 只解構用得到的
+...
+const loader=new GLTFLoader(manager);
+const loadGLB=name=>{...};                                // 解 base64 → loader.parseAsync
+loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader.loadAsync('assets/models/….glb')
+```
+
+`window.THREE_ADDONS` 提供：GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass。需要其他 addon（例如 OrbitControls）時，把它加進 `assets/vendor/three.bundle.entry.js`，在暫存資料夾執行 `npm i three@0.169.0 esbuild` 和 `npx esbuild three.bundle.entry.js --bundle --minify --format=iife --outfile=three.bundle.min.js`，再覆蓋 vendor 檔。不要改回 `import ... from 'three/addons/...'`，那樣離線就打不開了。
 
 ## 檔案結構（行號為範例檔大約位置）
 
@@ -11,7 +25,7 @@
 | `SLIDES` 陣列（每頁內容） | ~228–471 | **主要改這裡** |
 | 卡片渲染、換頁、鍵盤／滾輪／觸控 | ~476–575 | 不用改 |
 | three.js 場景、燈光、地面、程式化物件 | ~580–649 | 依主題調整或刪除專屬特效 |
-| 載入 GLB、`DEVICES`、`buildFlows()` | ~654–694 | **改模型路徑、物件名稱、資料流** |
+| 載入 GLB（`loadGLB('名稱')`）、`DEVICES`、`buildFlows()` | ~654–694 | **改模型名稱（同時改 head 的 `.glb.js` script）、物件名稱、資料流** |
 | `shotFor()` 每頁鏡位 | ~699–716 | **每頁一個 case** |
 | `frame()` 每幀更新 | ~739–803 | 刪掉不用的特效段落 |
 
@@ -79,8 +93,8 @@
 
 - `DEVICES`、`focus`、`P('…')` 內的名稱必須與 GLB 物件名稱完全一致，否則位置會退回 (0,5,0)。
 - 刪除某頁時，同步刪 `shotFor` 的 case、`flows` 的 key 與 `frame()` 中專屬該頁的特效。
-- 載入錯誤訊息裡提到的 `.bat` 檔名要改成 `server.bat`。
 - 鏡位常見錯誤：鏡頭落在建築內部（整片白／灰）或被近處高樓擋住。特寫時把鏡頭放在道路上空或開闊處，用 modeling-guide 的座標換算確認。
 - 用 Edit 工具改 HTML；用 PowerShell 字串替換含中文的程式碼容易靜默失敗。
-- GLB 必須經由 http 載入（`file://` 會被瀏覽器擋），所以需要 server.bat。
+- `file://` 下不能用 `fetch`／`loadAsync` 讀取任何本機檔案，也不能 `import` 外部模組檔，但 `<script src>` 和行內 `<script type="module">` 可以。所有資源（模型、JSON、貼圖）都要嵌進 `.js` 或 data URI，不要新增任何需要 fetch 的檔案。
+- 新增本機 `<script src>` 時，屬性只寫 `src`（`<script src="…"></script>`），build.ps1 才會內嵌它。
 - 引用的事實與數據要附 `sources`，不確定的內容寫成「研議中／構想」而非斷言。

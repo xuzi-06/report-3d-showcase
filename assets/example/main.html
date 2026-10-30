@@ -11,7 +11,7 @@
 :root{
   --paper:#f3f0e9;--ink:#1d211f;--muted:#666b65;--line:rgba(29,33,31,.12);
   --accent:#2c7a6d;--accent-soft:#d5ebe4;--amber:#d9822b;--amber-soft:#f8e3cb;
-  --card:rgba(255,255,252,.86);--mono:'DM Mono',ui-monospace,monospace;
+  --card:rgba(255,255,252,.86);--mono:'DM Mono',Consolas,ui-monospace,monospace;
   --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;
   --gutter:clamp(18px,4.6vw,72px);--ease:cubic-bezier(.65,0,.2,1);--spring:cubic-bezier(.2,.9,.25,1.12);
 }
@@ -185,7 +185,9 @@ body[data-sky="high"] .sky.high{opacity:1}
 html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+<script src="../vendor/three.bundle.min.js"></script>
+<script src="assets/models/智慧住宅.glb.js"></script>
+<script src="assets/models/通訊衛星.glb.js"></script>
 </head>
 <body data-sky="high">
 <div class="sky day"></div><div class="sky high"></div>
@@ -217,9 +219,8 @@ html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!i
 <div class="loader"><div class="loader-inner"><b>資通訊科技與<em>住</em></b><div class="loader-bar"><i></i></div><small id="loadPct">LOADING 3D SCENE · 0%</small><div class="load-error" role="status"></div></div></div>
 
 <script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const THREE=window.THREE;
+const {GLTFLoader,RoomEnvironment}=window.THREE_ADDONS;
 
 /* =====================================================================
    簡報內容：每一頁的文字、步驟（版面變化）、鏡頭與講稿都在這裡
@@ -660,7 +661,8 @@ const hotEls=DEVICES.map(([name,label,id],i)=>{const b=document.createElement('b
 const manager=new THREE.LoadingManager();
 manager.onProgress=(u,l,t)=>{const p=Math.round(l/t*100);$('.loader-bar i').style.width=p+'%';$('#loadPct').textContent=`LOADING 3D SCENE · ${p}%`};
 const loader=new GLTFLoader(manager);
-Promise.all([loader.loadAsync('assets/models/智慧住宅.glb'),loader.loadAsync('assets/models/通訊衛星.glb')]).then(([h,s])=>{
+const loadGLB=name=>{const b=(window.GLB||{})[name];if(!b)return Promise.reject(new Error('missing assets/models/'+name+'.glb.js'));const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return loader.parseAsync(u.buffer,'')};
+Promise.all([loadGLB('智慧住宅'),loadGLB('通訊衛星')]).then(([h,s])=>{
   house=h.scene;scene.add(house);
   house.traverse(o=>{
     if(!o.isMesh)return;
@@ -678,7 +680,7 @@ Promise.all([loader.loadAsync('assets/models/智慧住宅.glb'),loader.loadAsync
   ready=true;
   setShot(SLIDES[slideIdx],stepIdx,true,true);
   $('.loader').classList.add('done');
-}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請雙擊資料夾內的「開啟智慧住宅導覽.bat」以本機伺服器開啟，並確認網路可連至 Three.js CDN。<br><small>'+e.message+'</small>';el.classList.add('show')});
+}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請確認資料夾內的 vendor/three.bundle.min.js 與 assets/models/*.glb.js 都在（或改用 build.ps1 打包後的單一 HTML）。<br><small>'+e.message+'</small>';el.classList.add('show')});
 
 function buildFlows(){
   const roofTop=V(0,10.6,0), towerTop=TOWER.clone().add(V(0,20.5,0)), satDish=SAT.clone().add(V(0,-4,0));

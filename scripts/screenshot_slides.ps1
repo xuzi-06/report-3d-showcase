@@ -1,7 +1,7 @@
 # Headless screenshots of main.html slides + one contact sheet, for visual QA.
 # Uses Edge (always present on Windows) with SwiftShader so WebGL works without a GPU window.
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File screenshot_slides.ps1 -Url http://127.0.0.1:8781/main.html -Slides 1,2,2.2,3 -OutDir <scratch dir>
+#   powershell -ExecutionPolicy Bypass -File screenshot_slides.ps1 -Url <project>\dist\<title>.html -Slides 1,2,2.2,3 -OutDir <scratch dir>
 # Slides use the page's "#<slide>.<step>" hash; "?still" freezes animation so shots are deterministic.
 param(
   [Parameter(Mandatory=$true)][string]$Url,
@@ -12,6 +12,10 @@ param(
 )
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $edge) { throw 'Microsoft Edge not found' }
+# "powershell -File" passes -Slides 1,2,3 as ONE string; split it
+$Slides = @($Slides | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+# -Url may also be a local file path (the built single HTML or main.html); open it via file://
+if (Test-Path -LiteralPath $Url) { $Url = ([Uri](Resolve-Path -LiteralPath $Url).Path).AbsoluteUri }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 
 foreach ($s in $Slides) {

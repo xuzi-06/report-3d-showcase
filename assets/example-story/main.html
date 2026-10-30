@@ -12,7 +12,7 @@
   --paper:#2b2f35;--ink:#eef0f2;--text2:#c3c8cf;--muted:#8d949d;--line:rgba(220,228,236,.13);
   --accent:#f2a65a;--accent-soft:rgba(242,166,90,.15);--accent2:#9fb4c9;--warn:#e8735a;--warn-soft:rgba(232,115,90,.14);
   --card:rgba(30,33,38,.74);--card-border:rgba(255,255,255,.1);--glass:rgba(34,38,44,.72);--on-accent:#2a1a08;
-  --mono:'DM Mono',ui-monospace,monospace;--serif:'Noto Serif TC','Noto Sans TC',serif;
+  --mono:'DM Mono',Consolas,ui-monospace,monospace;--serif:'Noto Serif TC','PMingLiU','Noto Sans TC',serif;
   --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;
   --gutter:clamp(18px,4.6vw,72px);--ease:cubic-bezier(.65,0,.2,1);--spring:cubic-bezier(.2,.9,.25,1.12);
 }
@@ -187,7 +187,8 @@ html[data-mood="bright"] .grain{opacity:.25}
 html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+<script src="../vendor/three.bundle.min.js"></script>
+<script src="assets/models/斷在學校.glb.js"></script>
 </head>
 <body>
 <canvas id="world" aria-label="家、學校與街頭的 3D 場景"></canvas>
@@ -218,14 +219,8 @@ html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!i
 <div class="loader"><div class="loader-inner"><b>斷在<em>學校</em></b><div class="loader-bar"><i></i></div><small id="loadPct">LOADING 3D SCENE · 0%</small><div class="load-error" role="status"></div></div></div>
 
 <script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+const THREE=window.THREE;
+const {GLTFLoader,RoomEnvironment,EffectComposer,RenderPass,UnrealBloomPass,OutputPass,ShaderPass}=window.THREE_ADDONS;
 
 /* =====================================================================
    簡報內容：每一頁的文字與步驟
@@ -810,7 +805,8 @@ const actors={};const fx={car:null,carLights:[],mats:{}};
 const manager=new THREE.LoadingManager();
 manager.onProgress=(u,l,t)=>{const p=Math.round(l/t*100);$('.loader-bar i').style.width=p+'%';$('#loadPct').textContent=`LOADING 3D SCENE · ${p}%`};
 const loader=new GLTFLoader(manager);
-loader.loadAsync('assets/models/斷在學校.glb').then(g=>{
+const loadGLB=name=>{const b=(window.GLB||{})[name];if(!b)return Promise.reject(new Error('missing assets/models/'+name+'.glb.js'));const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return loader.parseAsync(u.buffer,'')};
+loadGLB('斷在學校').then(g=>{
   city=g.scene;scene.add(city);
   const tuned=new Set();
   city.traverse(o=>{
@@ -835,7 +831,7 @@ loader.loadAsync('assets/models/斷在學校.glb').then(g=>{
   ready=true;
   setShot(SLIDES[slideIdx],stepIdx,true,true);applyPlan(true);
   $('.loader').classList.add('done');
-}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請雙擊資料夾內的「server.bat」以本機伺服器開啟，並確認網路可連至 Three.js CDN。<br><small>'+e.message+'</small>';el.classList.add('show')});
+}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請確認資料夾內的 vendor/three.bundle.min.js 與 assets/models/*.glb.js 都在（或改用 build.ps1 打包後的單一 HTML）。<br><small>'+e.message+'</small>';el.classList.add('show')});
 
 function buildFlows(){
   const amber='#ffb45e', at=([x,z],y=1.9)=>V(x,y,z);
