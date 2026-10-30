@@ -722,7 +722,7 @@ class Flow{
    ===================================================================== */
 const SP={houseDoor:[-30.3,2.3],yard:[-31.6,3.4],fence:[-31.6,4.9],hSide:[-31.6,10.8],
   gateOut:[0,10.8],gateIn:[0,7.2],court:[0,3],corner:[-10.3,-2.2],
-  seatFront:[6.75,-4.4],seat:[6.75,-7.08],aisle:[5.68,-10],aisleF:[5.68,-4.4],tHome:[5.0,-10.9],
+  seatFront:[6.75,-4.4],seat:[6.75,-7.08],aisle:[5.4,-10],aisleF:[5.68,-4.4],tHome:[5.0,-10.9],
   stall:[8,4.5],street:[9,10.8],sideCafe:[31,10.8],cafeDoor:[31,3.4],aptSide:[21.5,10.8],aptDoor:[22,-8.9],
   ring:[0,5.2]};
 const SEATS=[[4.6,-7.08],[8.9,-7.08],[4.6,-8.58],[6.75,-8.58],[8.9,-8.58]];
@@ -831,6 +831,7 @@ loadGLB('斷在學校').then(g=>{
   ready=true;
   setShot(SLIDES[slideIdx],stepIdx,true,true);applyPlan(true);
   $('.loader').classList.add('done');
+  if(new URLSearchParams(location.search).has('check'))runCheck();
 }).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請確認資料夾內的 vendor/three.bundle.min.js 與 assets/models/*.glb.js 都在（或改用 build.ps1 打包後的單一 HTML）。<br><small>'+e.message+'</small>';el.classList.add('show')});
 
 function buildFlows(){
@@ -839,6 +840,47 @@ function buildFlows(){
   flows.net=[new Flow(at(teacher),at(kid),amber,1.2,.07,5),new Flow(at(police),at(kid),amber,1.2,.07,5),new Flow(at(social),at(kid),amber,1.2,.07,5),
              new Flow(at(police),at(social),amber,1.6,.06,5),new Flow(at(social),at(teacher),amber,1.6,.06,5),
              new Flow(V(-1,9.6,-6.5),at(kid,2.1),amber,4,.1,8)];
+}
+
+/* 地面高度：這個場景全部在同一平面 */
+const groundY=()=>0;
+
+/* 穿模檢查（網址加 ?check）：逐頁逐步模擬走位，沿每段路線在腳、腰、頭三個高度、身體左右兩側打射線，
+   撞到場景物件就列出來；也檢查停下的位置是否卡在物件裡、角色之間是否重疊。結果寫在 #checkOut。 */
+function runCheck(){
+  const skip=/^(地面|道路|中庭|人行道|操場|草地|跑道)/;
+  const meshes=[];
+  city.children.filter(o=>!actors[o.name]&&!skip.test(o.name)).forEach(o=>o.traverse(m=>{if(m.isMesh){m.material.side=THREE.DoubleSide;meshes.push(m)}}));
+  const top=o=>{while(o.parent&&o.parent!==city)o=o.parent;return o.name};
+  const gMax=p=>Math.max(...[[0,0],[.4,0],[-.4,0],[0,.4],[0,-.4]].map(([a,b])=>groundY(p.x+a,p.z+b)));
+  const rc=new THREE.Raycaster(), out=new Set(), pos={};
+  const cast=(tagTxt,a,dir,len,R,yBase)=>{
+    const n=V(-dir.z,0,dir.x);
+    for(const o of[-R,0,R])for(const h of[.35,1.0,1.6]){
+      rc.set(a.clone().addScaledVector(n,o).setY(yBase+h),dir);rc.far=len;
+      for(const hit of rc.intersectObjects(meshes,false)){
+        if(hit.point.y<gMax(hit.point)+.15)continue;   // 走上石台、橋的台階邊不算
+        out.add(`${tagTxt} → ${top(hit.object)} (${hit.point.x.toFixed(1)}, ${hit.point.z.toFixed(1)})`);return}}};
+  SLIDES.forEach((s,i)=>s.steps.forEach((_,j)=>{
+    const plan=planFor(s.id,j), ends=[];
+    for(const [name,spec] of Object.entries(plan)){
+      if(!spec.r)continue;
+      const R=.3, pts=spec.r.map(([x,z])=>V(x,0,z)), lab=`${i+1}.${j+1} ${name}`;
+      for(let k=1;k<pts.length;k++){
+        const a=pts[k-1], d=pts[k].clone().sub(a), L=d.length();if(L<.01)continue;d.normalize();
+        cast(lab+' 走路',a,d,L+R,R,Math.max(groundY(a.x,a.z),groundY(pts[k].x,pts[k].z)));
+      }
+      const e=pts[pts.length-1];
+      const seated=/^(sit|play)/.test(spec.pose||'');   // 坐在椅子、蓆子上是刻意的，不算卡在物件裡
+      if(name!=='馬車'&&!seated)for(let q=0;q<8;q++){const ang=q/8*Math.PI*2;cast(lab+' 停留',e,V(Math.cos(ang),0,Math.sin(ang)),R,0,groundY(e.x,e.z))}
+      if(!spec.hideEnd)ends.push([name,e,R]);
+    }
+    for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++)
+      if(ends[a][1].distanceTo(ends[b][1])<ends[a][2]+ends[b][2])out.add(`${i+1}.${j+1} ${ends[a][0]} ↔ ${ends[b][0]} 重疊`);
+  }));
+  const pre=document.createElement('pre');pre.id='checkOut';pre.textContent=out.size?[...out].join(String.fromCharCode(10)):'OK：沒有發現穿模';
+  pre.style.cssText='position:fixed;z-index:99;left:10px;top:60px;max-height:80vh;overflow:auto;background:#fff;color:#000;padding:10px;font:12px monospace';
+  document.body.appendChild(pre);
 }
 
 /* 套用本頁的角色走位 */
@@ -856,8 +898,12 @@ function applyPlan(instant){
       const d=a.face?a.face.clone().sub(end):(pts.length>1?end.clone().sub(pts[pts.length-2]):V(0,0,1));a.yaw=Math.atan2(d.x,d.z);
       continue;
     }
-    if(a.o.position.distanceTo(end)<.3&&a.vis>.5){a.route=null;a.visT=a.hideEnd?0:1;continue}
-    if(a.vis<.05||a.o.position.distanceTo(pts[0])>.6){a.o.position.copy(pts[0]);a.vis=0}   // 不在起點：原地淡入
+    // 只比水平距離：坐在石台、站在台基上時 y 不為 0，不能因此判定「還沒到」而重走
+    const cur=V(a.o.position.x,0,a.o.position.z);
+    if(cur.distanceTo(end)<.3&&a.vis>.5){a.route=null;a.visT=a.hideEnd?0:1;continue}
+    // 正在走向同一個終點（上一步還沒走完就按下一步）：繼續走，不要拉回起點重來
+    if(a.route&&a.vis>.5&&a.route[a.route.length-1].distanceTo(end)<.01){a.visT=a.hideEnd?a.visT:1;continue}
+    if(a.vis<.05||cur.distanceTo(pts[0])>.6){a.o.position.copy(pts[0]);a.vis=0}   // 不在起點：原地淡入
     a.route=pts.slice(1);if(!a.route.length)a.route=null;
     a.visT=1;a.start=now+(spec.delay||0);
     let L=0,prevP=pts[0];for(const q of pts.slice(1)){L+=q.distanceTo(prevP);prevP=q}
@@ -869,9 +915,10 @@ function applyPlan(instant){
    鏡頭：每頁每步一個鏡位，換頁時沿弧線補間
    ===================================================================== */
 function shotFor(s,st){
+  const F=(pos,tgt,who='小樂')=>({follow:who,pos,tgt});   // 跟拍：pos / tgt 為相對主角的位移
   switch(s.id){
     case'cover':return{pos:V(30,22,46),tgt:V(-2,3,2),orbit:true};
-    case'news':return[{pos:V(-8,34,60),tgt:V(-4,1,2)},{pos:V(-21,6.5,15),tgt:V(-30,2.6,0)},{pos:V(9,13,28),tgt:V(0,1.5,1)},{pos:V(21,8,24),tgt:V(30,2,2)},{pos:V(4,40,64),tgt:V(2,0,0)}][st];
+    case'news':return[{pos:V(-8,34,60),tgt:V(-4,1,2)},{pos:V(-21,6.5,15),tgt:V(-30,2.6,0)},F(V(9,9,9),V(0,1.2,-1)),F(V(-8,7,14),V(1,1.2,-2)),{pos:V(4,40,64),tgt:V(2,0,0)}][st];
     case'now':return st===0?{pos:V(-9,11,28),tgt:V(0,1.5,5)}:st===1?{pos:V(-14,15,34),tgt:V(0,1.5,4)}:{pos:V(-4,8,24),tgt:V(1,1.5,4)};
     case'family':return[{pos:V(-21,6,15),tgt:V(-30,2.8,-.5)},{pos:V(-22,4,11),tgt:V(-28.5,2,1.5)},{pos:V(-19,10,20),tgt:V(-31,3,0)}][st];
     case'school':
@@ -886,9 +933,12 @@ function shotFor(s,st){
   }
 }
 function offsetFor(layout){if(isNarrow())return{x:0,y:.2};return layout==='left'||layout==='hero'?{x:-.17,y:0}:layout==='right'?{x:.17,y:0}:layout==='bottom'?{x:0,y:.2}:{x:0,y:0}}
-const cam={from:V(0,0,0),fromT:V(0,0,0),to:V(0,0,0),toT:V(0,0,0),tgt:V(0,0,0),start:0,dur:1,lift:0,orbit:false,off:{x:0,y:0},offNow:{x:0,y:0}};
+const cam={follow:null,fOff:V(0,0,0),fLook:V(0,0,0),from:V(0,0,0),fromT:V(0,0,0),to:V(0,0,0),toT:V(0,0,0),tgt:V(0,0,0),start:0,dur:1,lift:0,orbit:false,off:{x:0,y:0},offNow:{x:0,y:0}};
 function setShot(s,step,slideChanged,instant=false){
   const sh=shotFor(s,step);
+  // follow：pos / tgt 是相對於主角腳下的位移，鏡頭每幀跟著主角走
+  cam.follow=sh.follow?actors[sh.follow]:null;
+  if(cam.follow){cam.fOff=sh.pos.clone();cam.fLook=sh.tgt.clone();const ap=cam.follow.o.position;sh.pos=V(ap.x,0,ap.z).add(cam.fOff);sh.tgt=V(ap.x,0,ap.z).add(cam.fLook)}
   cam.from.copy(camera.position);cam.fromT.copy(cam.tgt);
   cam.to.copy(sh.pos);cam.toT.copy(sh.tgt);cam.orbit=!!sh.orbit;
   const dist=cam.from.distanceTo(cam.to);
@@ -958,6 +1008,7 @@ function frame(){
   const s=SLIDES[slideIdx], st=stepIdx;
 
   // 鏡頭補間（二次貝茲弧線）＋待機微晃
+  if(cam.follow){const ap=cam.follow.o.position;cam.to.set(ap.x,0,ap.z).add(cam.fOff);cam.toT.set(ap.x,0,ap.z).add(cam.fLook)}
   const k=Math.min(1,(now-cam.start)/cam.dur), e=ease(k);
   const mid=cam.from.clone().lerp(cam.to,.5);mid.y+=cam.lift;
   const p=cam.from.clone().multiplyScalar((1-e)**2).add(mid.multiplyScalar(2*(1-e)*e)).add(cam.to.clone().multiplyScalar(e*e));

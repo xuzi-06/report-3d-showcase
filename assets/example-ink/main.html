@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#d9d0bf">
+<title>孔子生平｜3D 互動簡報</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap">
+<style>
+:root{
+  --paper:#d9d0bf;--ink:#2a241e;--text2:#4b4238;--muted:#857a6c;--line:rgba(70,52,34,.16);
+  --accent:#a3392a;--accent-soft:rgba(163,57,42,.1);--accent2:#4f6b5a;--warn:#7d2a1f;--warn-soft:rgba(125,42,31,.1);
+  --card:rgba(242,236,224,.8);--card-border:rgba(90,70,45,.2);--glass:rgba(242,236,224,.72);--on-accent:#fbf4e6;
+  --mono:'DM Mono',Consolas,ui-monospace,monospace;--serif:'Noto Serif TC','PMingLiU','Noto Sans TC',serif;
+  --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;
+  --gutter:clamp(18px,4.6vw,72px);--ease:cubic-bezier(.65,0,.2,1);--spring:cubic-bezier(.2,.9,.25,1.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;transition:background 1.2s,color 1.2s}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
+/* 宣紙纖維與四角暈墨 */
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;mix-blend-mode:multiply;opacity:.75;
+  background:radial-gradient(130% 100% at 50% 50%,transparent 60%,rgba(60,42,25,.3) 100%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .27  0 0 0 0 .18  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+/* ---------- 載入畫面 ---------- */
+.loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:#d9d0bf;color:#2a241e;transition:opacity .9s var(--ease),visibility .9s}
+.loader.done{opacity:0;visibility:hidden}
+.loader-inner{text-align:center}
+.loader b{display:block;font:900 clamp(30px,4.4vw,48px) var(--serif);letter-spacing:.02em}
+.loader b em{font-style:normal;color:#a3392a}
+.loader-bar{width:min(260px,60vw);height:2px;margin:22px auto 10px;background:rgba(60,42,25,.15);overflow:hidden;border-radius:2px}
+.loader-bar i{display:block;height:100%;width:0;background:#a3392a;transition:width .3s}
+.loader small{font:11px var(--mono);letter-spacing:.14em;color:#857a6c}
+.load-error{display:none;max-width:520px;margin:18px auto 0;padding:12px 16px;background:rgba(163,57,42,.08);color:#7d2a1f;border:1px solid rgba(163,57,42,.35);border-radius:10px;font-size:13px;line-height:1.7;text-align:left}
+.load-error.show{display:block}
+
+/* ---------- 頂部列 ---------- */
+.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);animation:pulse 2.4s ease-in-out infinite}
+.tools{display:flex;gap:8px;pointer-events:auto}
+.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--glass);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
+.tool:hover{border-color:var(--accent);background:var(--accent-soft)}
+.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
+.tool[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
+.counter b{font-weight:500;color:var(--ink)}
+.counter span{color:var(--muted)}
+
+/* ---------- 資訊卡 ---------- */
+.card{
+  position:fixed;z-index:10;width:var(--w);left:var(--l);top:var(--t);
+  transform:translate(0,var(--ty));
+  max-height:calc(100svh - 150px);overflow:auto;scrollbar-width:none;
+  padding:clamp(20px,2.4vw,34px);border-radius:22px;
+  background:var(--card);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid var(--card-border);
+  box-shadow:0 30px 70px -30px rgba(50,35,20,.45);
+  transition:left 1s var(--ease),top 1s var(--ease),width 1s var(--ease),transform 1s var(--ease),opacity .45s,filter .45s,background 1.2s,border-color 1.2s;
+}
+.card::-webkit-scrollbar{display:none}
+.card[data-layout="left"]{--w:min(480px,38vw);--l:var(--gutter);--t:50%;--ty:-50%}
+.card[data-layout="right"]{--w:min(480px,38vw);--l:calc(100vw - var(--gutter) - var(--w));--t:50%;--ty:-50%}
+.card[data-layout="hero"]{--w:min(620px,48vw);--l:var(--gutter);--t:52%;--ty:-50%}
+.card[data-layout="bottom"]{--w:min(1080px,calc(100vw - 2 * var(--gutter)));--l:calc(50vw - var(--w) / 2);--t:calc(100svh - 74px);--ty:-100%}
+.card.leaving{opacity:0;filter:blur(8px)}
+.card::before{content:"";position:absolute;left:0;top:28px;width:4px;height:46px;background:var(--accent);opacity:.85}
+
+.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.card{color:var(--ink)}
+.title{color:var(--ink);font:900 clamp(32px,3.6vw,54px)/1.16 var(--serif);letter-spacing:-.01em;margin:16px 0 14px}
+.card[data-layout="hero"] .title{font-size:clamp(56px,7.4vw,112px);margin:18px 0 14px}
+.title em{font-style:normal;color:var(--accent)}
+.title .ln{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
+.title .ln>span{display:inline-block}
+.dek{font-size:clamp(14px,1.15vw,16.5px);line-height:1.9;color:var(--text2);margin:0}
+.card[data-layout="hero"] .dek{font-size:clamp(17px,1.5vw,21px);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font:11px var(--mono);letter-spacing:.06em;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--accent-soft);color:var(--ink)}
+.facts{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:2px;counter-reset:f}
+.facts li{counter-increment:f;display:grid;grid-template-columns:30px 1fr;gap:8px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.75;color:var(--text2)}
+.facts li::before{content:counter(f,decimal-leading-zero);font:11px var(--mono);color:var(--accent);padding-top:3px}
+.facts b{color:var(--ink)}
+.facts.plain li{grid-template-columns:1fr}
+.facts.plain li::before{display:none}
+.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
+.sources{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.6;color:var(--muted)}
+.sources::before{content:"資料來源";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
+.sources a{text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+
+/* 分組（逐步出現的段落） */
+.grp{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--accent-soft);border:1px solid var(--line)}
+.grp .k{font:10px var(--mono);letter-spacing:.14em;color:var(--accent)}
+.grp h4{margin:5px 0 6px;font-size:17px;letter-spacing:-.01em;color:var(--ink)}
+.grp p{margin:0;font-size:13.5px;line-height:1.8;color:var(--text2)}
+.grp .facts{margin-top:8px}
+.grp .facts li{font-size:13px;padding:8px 0}
+.grp.row{margin-top:6px;padding:9px 14px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:baseline;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0}
+.grp.row .k{grid-row:span 2;font-size:11px;color:var(--accent)}
+.grp.row h4{margin:0;font-size:15px}
+.grp.row p{font-size:12.5px;line-height:1.7}
+.grp.row.last{background:var(--warn-soft);border-radius:10px;border-top-color:transparent}
+.grp.row.last .k,.grp.row.last h4{color:var(--warn)}
+.pips{display:flex;gap:5px;margin-top:2px}
+.pips i{width:22px;height:4px;border-radius:4px;background:var(--line)}
+.pips i.on{background:var(--accent)}
+.quote{margin:16px 0 0;padding:4px 0 4px 18px;border-left:3px solid var(--accent);font:600 clamp(17px,1.5vw,21px)/1.7 var(--serif);color:var(--ink)}
+
+/* 大數字 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.stat{padding:14px 12px;border-radius:14px;background:var(--accent-soft);border:1px solid var(--line)}
+.stat b{font:500 clamp(24px,2.3vw,34px)/1 var(--mono);letter-spacing:-.04em;color:var(--ink)}
+.stat small{font:12px var(--mono);color:var(--muted);margin-left:2px}
+.stat span{display:block;margin-top:8px;font-size:11.5px;line-height:1.5;color:var(--text2)}
+.stat.warn{background:var(--warn-soft)}
+.stat.warn b{color:var(--warn)}
+
+/* 進場動畫：.anim 元素依 --i 依序出現 */
+.anim{opacity:0;transform:translateY(16px)}
+.card.in .anim{animation:rise .8s var(--spring) forwards;animation-delay:calc(var(--i,0) * 70ms + 120ms)}
+.title .ln>span{transform:translateY(105%)}
+.card.in .title .ln>span{animation:lineUp .9s var(--ease) forwards;animation-delay:calc(var(--i,0) * 90ms + 80ms)}
+.part[hidden]{display:none!important}
+.part.reveal .anim,.part.reveal.anim{animation:rise .7s var(--spring) both;animation-delay:calc(var(--i,0) * 70ms)}
+
+/* ---------- 指引線、標籤 ---------- */
+#leader{position:fixed;inset:0;z-index:8;pointer-events:none;width:100%;height:100%;opacity:0;transition:opacity .5s}
+#leader.show{opacity:1}
+#leader path{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 5;animation:dash 1.2s linear infinite}
+#leader .dot{fill:var(--accent)}
+#leader .ring{fill:none;stroke:var(--accent);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:ring 1.8s ease-out infinite}
+.tag{position:fixed;z-index:9;left:0;top:0;pointer-events:none;padding:5px 10px;border-radius:999px;background:var(--accent);color:var(--on-accent);font:11px var(--sans);font-weight:700;letter-spacing:.06em;white-space:nowrap;opacity:0;transition:opacity .4s}
+.tag.show{opacity:1}
+
+/* ---------- 進度軌 ---------- */
+.rail{position:fixed;z-index:20;left:var(--gutter);right:var(--gutter);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;gap:6px;align-items:flex-end}
+.seg{flex:1;height:22px;border:0;padding:0;background:none;cursor:pointer;position:relative}
+.seg::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:3px;background:var(--line);transition:background .3s,height .3s}
+.seg i{position:absolute;left:0;bottom:0;height:3px;border-radius:3px;background:var(--accent);width:0;transition:width .7s var(--ease)}
+.seg.done i{width:100%}
+.seg:hover::before{height:5px}
+.seg span{position:absolute;left:0;bottom:12px;font:10px var(--sans);letter-spacing:.06em;white-space:nowrap;color:var(--muted);opacity:0;transform:translateY(4px);transition:.25s}
+.seg:hover span,.seg.active span{opacity:1;transform:none}
+.seg.active span{color:var(--ink)}
+.navbtns{display:flex;gap:6px;margin-left:12px}
+.navbtns button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass);cursor:pointer;font-size:15px;transition:.2s}
+.navbtns button:hover{background:var(--accent);color:var(--on-accent)}
+
+/* ---------- 講稿面板 ---------- */
+.notes{position:fixed;z-index:30;right:12px;top:60px;bottom:64px;width:min(420px,calc(100vw - 24px));padding:22px 24px;border-radius:18px;background:rgba(24,26,30,.95);border:1px solid rgba(255,255,255,.1);color:#e9ece8;backdrop-filter:blur(12px);transform:translateX(calc(100% + 24px));transition:transform .6s var(--ease);display:flex;flex-direction:column;gap:12px}
+.notes.open{transform:none}
+.notes header{display:flex;justify-content:space-between;align-items:baseline;font:11px var(--mono);letter-spacing:.12em;color:#b7a48f}
+.notes h3{margin:0;font-size:20px;letter-spacing:-.02em}
+.notes .body{flex:1;overflow:auto;font-size:15px;line-height:2;color:#dde2e8;white-space:pre-line;padding-right:6px}
+.notes .body:empty::before{content:"（尚未提供講稿）";color:#7d848c}
+.notes footer{font:11px var(--mono);color:#8b929b;border-top:1px solid #33373d;padding-top:10px;display:flex;justify-content:space-between;gap:10px}
+.notes .timer{color:#e0a07a}
+
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes lineUp{to{transform:none}}
+@keyframes nudge{to{transform:translateX(8px);opacity:.5}}
+@keyframes pulse{50%{box-shadow:0 0 0 7px transparent}}
+@keyframes dash{to{stroke-dashoffset:-18}}
+@keyframes ring{from{r:6;opacity:1}to{r:22;opacity:0}}
+
+@media (max-width:820px){
+  .card,.card[data-layout]{--w:calc(100vw - 2 * var(--gutter));--l:var(--gutter);--t:calc(100svh - 70px);--ty:-100%;max-height:52svh;padding:20px}
+  .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
+  .stats{grid-template-columns:1fr 1fr}
+  .tool .lbl{display:none}
+  .seg span{display:none}
+  .navbtns{display:none}
+}
+html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
+</style>
+<script src="vendor/three.bundle.min.js"></script>
+<script src="assets/models/孔子生平.glb.js"></script>
+</head>
+<body>
+<canvas id="world" aria-label="春秋魯國的水墨 3D 場景：故居、杏壇、朝堂與周遊列國之路"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
+<div class="tag" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand"><i></i>CONFUCIUS · 孔子生平</div>
+  <div class="tools">
+    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">10</span></span></div>
+    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
+    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
+  </div>
+</header>
+
+<article class="card" data-layout="hero" aria-live="polite"></article>
+
+<nav class="rail" aria-label="章節"><div class="navbtns"><button id="prevBtn" aria-label="上一步">←</button><button id="nextBtn" aria-label="下一步">→</button></div></nav>
+
+<aside class="notes" aria-label="講稿">
+  <header><span id="notesIdx">01 / 10</span><span class="timer" id="timer">00:00</span></header>
+  <h3 id="notesTitle"></h3>
+  <div class="body" id="notesBody"></div>
+  <footer><span id="notesNext"></span><span>← → 換頁　N 關閉</span></footer>
+</aside>
+
+<div class="loader"><div class="loader-inner"><b>孔子<em>生平</em></b><div class="loader-bar"><i></i></div><small id="loadPct">LOADING 3D SCENE · 0%</small><div class="load-error" role="status"></div></div></div>
+
+<script type="module">
+const THREE=window.THREE;
+const {GLTFLoader,RoomEnvironment,EffectComposer,RenderPass,OutputPass,ShaderPass}=window.THREE_ADDONS;
+
+/* =====================================================================
+   簡報內容（範例文案）
+   steps：每按一次「下一步」進入下一個 step；parts 決定顯示哪些區塊
+   mood：0 = 濃霧水墨、1 = 霧散淡彩（可為每一步各給一個值）
+   focus / tag：指引線指向的物件或角色（可寫在 step 內）
+   ===================================================================== */
+const SLIDES = [
+{ id:'cover', label:'開場', eyebrow:'CONFUCIUS · 551–479 BCE', mood:.15,
+  title:'孔子<em>生平</em>',
+  dek:'一位老師的七十三年',
+  chips:['春秋・魯國','範例文案'], hint:true,
+  steps:[{layout:'hero',parts:['dek','chips']}],
+  notes:`大家好，今天要介紹的是孔子的一生。
+
+畫面裡這座霧中的小城，是春秋時代的魯國。站在石台上的那位老人，就是孔子；圍坐在他身邊的，是他的學生。
+
+接下來，我們跟著他從魯國陬邑的一間茅草屋出發，走完這七十三年。` },
+
+{ id:'birth', label:'少也賤', eyebrow:'出身 · 魯國陬邑', mood:[0,.05,.05],
+  title:'吾少也<em>賤</em>',
+  dek:'孔子名丘，字仲尼，前 551 年生於魯國陬邑（今山東曲阜一帶）。父親叔梁紇在他年幼時過世，由母親顏氏撫養長大，家境清寒。',
+  facts:['<b>委吏：</b>年輕時管過倉庫，他說「會計當而已矣」——帳目算對就好',
+         '<b>乘田：</b>也管過牛羊，他說「牛羊茁壯長而已矣」——把牲畜養壯就好'],
+  quote:'「吾少也賤，故多能鄙事。」——《論語・子罕》',
+  steps:[{layout:'left',parts:['dek'],focus:'陬邑故居',tag:'魯國陬邑'},
+         {layout:'left',parts:['dek','facts'],focus:'倉廩',tag:'委吏：管倉庫'},
+         {layout:'left',parts:['quote'],focus:'孔子',tag:'少年孔丘'}],
+  sources:['司馬遷《史記・孔子世家》','《孟子・萬章下》','《論語・子罕》'],
+  notes:`孔子名丘，字仲尼，西元前 551 年出生在魯國的陬邑，大約是今天山東曲阜一帶。
+
+父親叔梁紇在他很小的時候就過世了，他是由母親顏氏一手帶大的，家裡並不富裕。
+
+（下一步）
+
+年輕的孔子做過很基層的差事。他當過「委吏」，負責管倉庫，他說：帳目算對就好。也當過「乘田」，負責管牛羊，他說：把牛羊養得壯壯的就好。
+
+（下一步）
+
+後來他回想這段日子，說了一句話：「吾少也賤，故多能鄙事。」我小時候地位低微，所以學會了很多粗活。這句話很誠實，也說明了他一生的起點。` },
+
+{ id:'study', label:'志于學', eyebrow:'求學 · 十有五而志于學', mood:[.1,.15,.2],
+  title:'十有五<br>而<em>志于學</em>',
+  dek:'孔子沒有固定的老師，也沒有出身名門。他從十五歲立定志向，哪裡有懂的人，就向誰學。',
+  facts:['<b>問禮：</b>相傳曾到周朝都城向老子請教禮制（《史記》記載）',
+         '<b>學琴：</b>向魯國樂師師襄學琴，一首曲子反覆練到能體會作者為人才換下一首',
+         '<b>無常師：</b>「三人行，必有我師焉」——身邊的人都是老師'],
+  quote:'「三人行，必有我師焉：擇其善者而從之，其不善者而改之。」——《論語・述而》',
+  steps:[{layout:'left',parts:['dek'],focus:'孔子',tag:'青年孔子'},
+         {layout:'left',parts:['dek','facts'],focus:'老子',tag:'問禮於老子（相傳）'},
+         {layout:'left',parts:['quote']}],
+  sources:['《論語・為政》','《論語・述而》','司馬遷《史記・孔子世家》'],
+  notes:`《論語・為政》裡，孔子說自己「十有五而志于學」：十五歲就立定志向要求學。
+
+他沒有出身名門，也沒有固定的老師，所以他的方法是：哪裡有懂的人，就向誰學。
+
+（下一步）
+
+根據《史記》記載，他曾經到周朝的都城，向老子請教禮制，這段相遇後人多半當作傳說來看。他也向魯國的樂師師襄學琴，一首曲子反覆練，練到能體會作曲者的為人，才肯換下一首。
+
+（下一步）
+
+所以他說：「三人行，必有我師焉。」看到別人的優點就學，看到缺點就拿來反省自己。` },
+
+{ id:'teach', label:'杏壇設教', eyebrow:'教育 · 有教無類', mood:[.35,.45,.5],
+  title:'杏壇<br><em>有教無類</em>',
+  dek:'大約三十歲前後，孔子開始收學生、私人講學。在「學在官府」的時代，他把教育帶出了貴族的圍牆。',
+  stats:[{n:'3,000',u:'人',l:'相傳弟子總數（《史記》：「弟子蓋三千焉」）'},
+         {n:'72',u:'人',l:'精通禮、樂、射、御、書、數六藝的弟子'},
+         {n:'1',u:'束乾肉',l:'「自行束脩以上，吾未嘗無誨焉」——學費一束乾肉就收'}],
+  groups:[{k:'因材施教 · 《論語・先進》',h:'同一個問題，兩種答案',p:'子路問「聽到了就去做嗎？」孔子說：有父兄在，怎能馬上做。冉有問同一個問題，孔子說：聽到了就去做。因為子路太急，冉有太退縮。'}],
+  steps:[{layout:'left',parts:['dek'],focus:'琴',tag:'杏壇弦歌'},
+         {layout:'left',parts:['dek','stats'],focus:'杏壇',tag:'杏壇'},
+         {layout:'left',parts:['g0'],focus:'子路',tag:'子路：性子急'}],
+  sources:['《論語・衛靈公》','《論語・述而》','《論語・先進》','司馬遷《史記・孔子世家》','《莊子・漁父》（杏壇典故）'],
+  notes:`大約三十歲前後，孔子開始收學生、私人講學。
+
+在那個時代，教育是貴族的事，叫做「學在官府」。孔子把它帶出了貴族的圍牆。畫面中這座石台叫「杏壇」，典故出自《莊子》，後來成了教育的代名詞。
+
+（下一步）
+
+《史記》說他的弟子大約有三千人，其中精通禮、樂、射、御、書、數六藝的有七十二人。
+
+而他收學生的門檻很低：「自行束脩以上，吾未嘗無誨焉」，只要帶一束乾肉當見面禮，他都願意教。這就是「有教無類」。
+
+（下一步）
+
+他也會看學生的個性給不同的答案。子路和冉有問了同一個問題：「聽到了就要馬上去做嗎？」孔子對子路說：你有父兄在，怎麼能馬上做？對冉有卻說：聽到了就去做。
+
+因為子路太衝動，要拉他一下；冉有太退縮，要推他一把。後人把這叫做「因材施教」。` },
+
+{ id:'office', label:'仕魯', eyebrow:'從政 · 魯定公時期', mood:[.6,.7,.55],
+  title:'從中都宰<br>到<em>大司寇</em>',
+  dek:'約五十一歲，孔子出任中都宰，治理一年，四方都來仿效。之後升任司空、大司寇，是他一生最接近實現理想的時候。',
+  groups:[{k:'前 500 · 夾谷之會',h:'以禮相爭，收回失地',p:'孔子陪魯定公與齊景公會盟。面對齊國的威嚇，他依禮據理力爭，齊國最後歸還了先前侵占的魯國土地。'},
+          {k:'前 498 · 墮三都',h:'想削弱權臣，卻半途而廢',p:'魯國政權落在季孫、叔孫、孟孫三家手上。孔子主張拆除三家私邑的城牆，拆了兩座，第三座失敗。'}],
+  steps:[{layout:'left',parts:['dek'],focus:'孔子',tag:'中都宰・孔子'},
+         {layout:'left',parts:['g0'],focus:'魯國朝堂',tag:'魯國朝堂'},
+         {layout:'left',parts:['g1'],focus:'魯國朝堂',tag:'三桓掌權'}],
+  sources:['司馬遷《史記・孔子世家》','《左傳・定公十年》'],
+  notes:`大約五十一歲，孔子終於有機會從政。魯定公任命他為中都宰，也就是一個地方的首長。《史記》說他治理一年，四方都來仿效。
+
+之後他升任司空、再升為大司寇，掌管司法。這是他一生最接近實現理想的時候。
+
+（下一步）
+
+西元前 500 年，魯定公和齊景公在夾谷會盟，由孔子陪同。齊國想用武力威嚇，孔子依禮據理力爭，最後齊國歸還了之前侵占的魯國土地。
+
+（下一步）
+
+但魯國真正的權力，掌握在季孫、叔孫、孟孫三家手上，史稱「三桓」。孔子主張拆掉三家私邑的城牆，史稱「墮三都」。拆了兩座，第三座失敗，改革半途而廢，他和權臣之間也有了裂痕。` },
+
+{ id:'wander', label:'周遊列國', eyebrow:'周遊列國 · 十四年', mood:[.3,.15,.25,.2,.05],
+  title:'周遊列國<br><em>十四年</em>',
+  dek:'齊國送來女樂，執政的季桓子三日不上朝。約五十五歲的孔子帶著弟子離開魯國，到衛、宋、鄭、陳、蔡等國，尋找願意實行他主張的國君。',
+  groups:[{k:'困於匡 · 《論語・子罕》',h:'被誤認成仇人',p:'匡人把孔子誤認為曾經欺壓他們的陽虎，圍困了五天。孔子說：「文王既沒，文不在茲乎？」'},
+          {k:'過宋 · 《論語・述而》',h:'大樹下被拔樹威脅',p:'孔子在大樹下與弟子習禮，宋國司馬桓魋要殺他，把樹拔了。孔子說：「天生德於予，桓魋其如予何？」'},
+          {k:'鄭國東門 · 《史記》',h:'「累累若喪家之狗」',p:'和弟子走散，獨自站在東門。有人說他像喪家之狗，子貢據實轉告，孔子笑著說：「然哉！然哉！」'},
+          {k:'在陳絕糧 · 《論語・衛靈公》',h:'君子固窮',p:'在陳、蔡之間斷糧，隨行的人病倒爬不起來。子路生氣地問：君子也會這麼窮困嗎？孔子說：「君子固窮，小人窮斯濫矣。」'}],
+  steps:[{layout:'left',parts:['dek'],focus:'魯城門',tag:'離開魯國'},
+         {layout:'left',parts:['g0'],focus:'匡邑',tag:'匡'},
+         {layout:'left',parts:['g1'],focus:'宋國大樹',tag:'宋：大樹'},
+         {layout:'left',parts:['g2'],focus:'孔子',tag:'鄭國東門'},
+         {layout:'left',parts:['g3'],focus:'陳蔡之亭',tag:'陳蔡之間'}],
+  sources:['《論語・微子》','《論語・子罕》','《論語・述而》','《論語・衛靈公》','司馬遷《史記・孔子世家》'],
+  notes:`後來齊國送了一批歌舞女樂給魯國，執政的季桓子接受了，連續三天不上朝。孔子知道理想在魯國已經走不下去，大約五十五歲那年，帶著弟子離開了魯國。
+
+這一走就是十四年，到過衛、宋、鄭、陳、蔡等國，想找一位願意實行他主張的國君。
+
+（下一步）
+
+第一個難關在匡。匡人把孔子誤認成曾經欺壓他們的陽虎，把他們圍了五天。孔子說：「文王既沒，文不在茲乎？」周文王雖然不在了，文化不就在我身上嗎？
+
+（下一步）
+
+到了宋國，孔子在一棵大樹下和弟子習禮。宋國的司馬桓魋想殺他，把大樹拔了。孔子說：「天生德於予，桓魋其如予何？」上天把德行交給我，桓魋能拿我怎麼樣？
+
+（下一步）
+
+到了鄭國，他和弟子走散了，一個人站在東門外。有人說他看起來「累累若喪家之狗」，子貢據實告訴他，孔子反而笑了：「說得對！說得對！」
+
+（下一步）
+
+最艱難的是在陳、蔡之間斷了糧，隨行的人都餓病了。子路生氣地問：君子也會這麼窮困嗎？孔子說：「君子固窮，小人窮斯濫矣。」君子在窮困時仍守得住自己，小人窮困了就什麼都做得出來。` },
+
+{ id:'return', label:'返魯', eyebrow:'返魯 · 前 484', mood:[.55,.7],
+  title:'回到魯國<br><em>整理典籍</em>',
+  dek:'六十八歲，孔子被迎回魯國。他不再求官，把最後的歲月留給教學，以及整理古代的典籍。',
+  facts:['<b>詩、書：</b>編訂古代的詩歌與文獻','<b>禮、樂：</b>整理禮制與音樂',
+         '<b>易：</b>晚年喜讀《易》，「韋編三絕」','<b>春秋：</b>依魯國史書修《春秋》'],
+  quote:'這些說法出自《史記》等後世記載，孔子實際參與到什麼程度，學界仍有討論。',
+  steps:[{layout:'left',parts:['dek'],focus:'孔子',tag:'六十八歲・返魯'},
+         {layout:'left',parts:['dek','facts','quote'],focus:'竹簡',tag:'竹簡'}],
+  sources:['司馬遷《史記・孔子世家》'],
+  notes:`西元前 484 年，六十八歲的孔子被迎回魯國。周遊了十四年，他沒有找到願意重用他的國君。
+
+回到魯國後，他不再求官，把最後的歲月留給教學，以及整理古代的典籍。
+
+（下一步）
+
+根據《史記》記載，他編訂了《詩》《書》，整理了禮和樂；晚年特別喜歡讀《易》，把串竹簡的皮繩都翻斷了好幾次，這就是「韋編三絕」。他也根據魯國的史書修了《春秋》。
+
+不過要說明一下，這些說法多半出自後世的記載，孔子實際參與到什麼程度，學界還有不同的看法。` },
+
+{ id:'late', label:'晚年', eyebrow:'晚年 · 前 479', mood:[.3,.2,.1],
+  title:'天喪予<br><em>天喪予</em>',
+  dek:'晚年接連失去最親近的學生。前 481 年前後，最得意的弟子顏回早逝；前 480 年，子路死於衛國的內亂。',
+  facts:['<b>顏回之死：</b>孔子哭道：「噫！天喪予！天喪予！」（《論語・先進》）',
+         '<b>子路之死：</b>在衛國孔悝之亂中戰死，臨死前還把冠纓繫好'],
+  quote:'前 479 年，孔子辭世，年七十三，葬於魯城北的泗水旁。弟子守喪三年，子貢在墓旁結廬，守了六年。',
+  steps:[{layout:'left',parts:['dek','facts'],focus:'顏回',tag:'顏回'},
+         {layout:'left',parts:['dek','facts'],focus:'子路',tag:'子路'},
+         {layout:'left',parts:['quote'],focus:'孔子墓',tag:'孔子墓'}],
+  sources:['《論語・先進》','《左傳・哀公十五年》','司馬遷《史記・孔子世家》'],
+  notes:`孔子的晚年，接連失去了最親近的學生。
+
+他最欣賞的弟子顏回早逝。孔子哭著說：「噫！天喪予！天喪予！」老天要亡我啊！
+
+（下一步）
+
+不久之後，跟著他最久、個性最直的子路，在衛國的內亂中戰死。據《左傳》記載，子路臨死前說「君子死，冠不免」，把被砍斷的冠纓重新繫好才倒下。
+
+（下一步）
+
+西元前 479 年，孔子辭世，享年七十三歲，葬在魯城北邊的泗水旁。
+
+弟子們為他守喪三年才離開。只有子貢在墓旁搭了一間小屋，又多守了三年，一共六年。` },
+
+{ id:'legacy', label:'一生', eyebrow:'《論語・為政》', mood:1,
+  title:'從心所欲<br><em>不踰矩</em>',
+  dek:'孔子沒有親手寫下自己的學說。弟子與再傳弟子把他的言行編成《論語》，讓「仁」與「禮」、「學而不厭，誨人不倦」流傳了兩千五百年。',
+  facts:['吾十有五而志于學','三十而立','四十而不惑','五十而知天命','六十而耳順','七十而從心所欲，不踰矩'],
+  plain:true,
+  steps:[{layout:'left',parts:['facts']},{layout:'left',parts:['dek']}],
+  notes:`最後，用孔子回顧自己一生的話作結。
+
+吾十有五而志于學，三十而立，四十而不惑，五十而知天命，六十而耳順，七十而從心所欲，不踰矩。
+
+（下一步）
+
+孔子沒有親手寫下自己的學說。是他的弟子和再傳弟子，把他的言行編成了《論語》。
+
+一個出身清寒、做過倉庫管理員的人，一輩子沒有當上大官，卻因為「學而不厭，誨人不倦」，被後世尊為「至聖先師」。` },
+
+{ id:'sources', label:'資料來源', eyebrow:'REFERENCES', mood:1,
+  title:'資料<em>來源</em>',
+  facts:['司馬遷《史記・孔子世家》','《論語》：為政、述而、子罕、先進、衛靈公、微子','《孟子・萬章下》','《左傳》：定公十年、哀公十五年','《莊子・漁父》（杏壇典故）'],
+  plain:true, chips:['謝謝聆聽','Q & A'],
+  steps:[{layout:'left',parts:['facts','chips']}],
+  notes:`這是本次報告引用的資料來源，主要是《史記・孔子世家》和《論語》。
+
+以上是我的報告，謝謝大家，歡迎提問。` }
+];
+
+/* =====================================================================
+   DOM 與狀態
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag');
+const notes=$('.notes'), notesBtn=$('#notesBtn');
+const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
+const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isNarrow=()=>innerWidth<=820;
+let slideIdx=0, stepIdx=0, ready=false;
+$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
+
+const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
+
+/* =====================================================================
+   資訊卡渲染
+   ===================================================================== */
+function titleHTML(t){return t.split('<br>').map((l,i)=>`<span class="ln"><span style="--i:${i}">${l}</span></span>`).join('')}
+function groupHTML(g,i){
+  const body=(g.p?`<p class="anim" style="--i:3">${g.p}</p>`:'')+(g.li?`<ul class="facts">${g.li.map((x,j)=>`<li class="anim" style="--i:${j+3}"><span>${x}</span></li>`).join('')}</ul>`:'');
+  return`<div class="grp part" data-part="g${i}"><div class="k anim" style="--i:1">${g.k}</div><h4 class="anim" style="--i:2">${g.h}</h4>${body}</div>`;
+}
+function renderCard(s){
+  const n=SLIDES.indexOf(s)+1;
+  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const dek=s.dek?`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`:'';
+  const stats=s.stats?`<div class="stats part" data-part="stats">${s.stats.map((x,i)=>`<div class="stat anim" style="--i:${i+3}"><b data-n="${x.n}">${x.n}</b><small>${x.u}</small><span>${x.l}</span></div>`).join('')}</div>`:'';
+  const groups=(s.groups||[]).map(groupHTML).join('');
+  const facts=s.facts?`<ul class="facts part ${s.plain?'plain':''}" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
+  const quote=s.quote?`<blockquote class="quote part anim" data-part="quote" style="--i:3">${s.quote}</blockquote>`:'';
+  const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
+  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
+  const sources=s.sources?`<div class="sources anim" style="--i:8">${s.sources.map(x=>Array.isArray(x)?`<a href="${x[1]}" target="_blank" rel="noopener noreferrer">${x[0]}</a>`:`<span>${x}</span>`).join('')}</div>`:'';
+  card.innerHTML=`${head}${dek}${stats}${groups}${facts}${quote}${chips}${hint}${sources}`;
+}
+/* 大數字從 0 數上來 */
+function countUp(root){
+  root.querySelectorAll('.stat b[data-n]').forEach(el=>{
+    const raw=el.dataset.n, target=parseFloat(raw.replace(/,/g,'')), dec=(raw.split('.')[1]||'').length, comma=raw.includes(',');
+    if(reduced){el.textContent=raw;return}
+    const t0=performance.now(), dur=1400;
+    const tick=now=>{const k=Math.min(1,(now-t0)/dur), v=target*(1-Math.pow(1-k,3));
+      let s=v.toFixed(dec);if(comma)s=Number(s).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+      el.textContent=s;if(k<1)requestAnimationFrame(tick)};
+    requestAnimationFrame(tick);
+  });
+}
+function applyStep(s,step,animateParts){
+  const st=s.steps[step];
+  card.dataset.layout=st.layout;
+  card.querySelectorAll('.part').forEach(p=>{
+    const on=st.parts.includes(p.dataset.part), wasHidden=p.hidden;
+    p.hidden=!on;
+    if(on&&wasHidden&&animateParts){p.classList.remove('reveal');void p.offsetWidth;p.classList.add('reveal');if(p.dataset.part==='stats')countUp(p)}
+  });
+}
+
+let swapTimer=0;
+function go(i,step=0,instant=false){
+  i=Math.max(0,Math.min(SLIDES.length-1,i));
+  const s=SLIDES[i], changed=i!==slideIdx||!card.innerHTML;
+  slideIdx=i;stepIdx=Math.max(0,Math.min(s.steps.length-1,step));
+  if(changed){
+    card.classList.add('leaving');card.classList.remove('in');
+    clearTimeout(swapTimer);
+    swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0;if(!card.querySelector('.stats')?.hidden)countUp(card)},instant?0:420);
+  }else applyStep(s,stepIdx,true);
+  $('#cur').textContent=String(i+1).padStart(2,'0');
+  segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
+  history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
+  updateNotes();
+  if(ready){setShot(s,stepIdx,changed);applyPlan(false)}
+}
+function next(){const s=SLIDES[slideIdx];if(stepIdx<s.steps.length-1)go(slideIdx,stepIdx+1);else if(slideIdx<SLIDES.length-1)go(slideIdx+1,0)}
+function prev(){if(stepIdx>0)go(slideIdx,stepIdx-1);else if(slideIdx>0)go(slideIdx-1,SLIDES[slideIdx-1].steps.length-1)}
+
+/* 講稿面板與計時器 */
+const t0=performance.now();
+function updateNotes(){
+  const s=SLIDES[slideIdx];
+  $('#notesIdx').textContent=`${String(slideIdx+1).padStart(2,'0')} / ${String(SLIDES.length).padStart(2,'0')}　步驟 ${stepIdx+1}/${s.steps.length}`;
+  $('#notesTitle').textContent=s.title.replace(/<[^>]+>/g,'');
+  $('#notesBody').textContent=s.notes||'';
+  const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
+}
+setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
+function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
+notesBtn.onclick=toggleNotes;
+$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+$('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
+
+/* 鍵盤、滾輪、觸控 */
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
+  else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+});
+let wheelAcc=0,wheelLock=0;
+addEventListener('wheel',e=>{
+  if(e.target.closest('.notes .body'))return;
+  if(e.target.closest('.card')&&((e.deltaY>0&&card.scrollTop+card.clientHeight<card.scrollHeight-2)||(e.deltaY<0&&card.scrollTop>0)))return;
+  e.preventDefault();const now=performance.now();if(now<wheelLock)return;
+  wheelAcc+=e.deltaY;if(Math.abs(wheelAcc)>40){wheelAcc>0?next():prev();wheelAcc=0;wheelLock=now+900}
+},{passive:false});
+let touchY=null;
+addEventListener('touchstart',e=>{touchY=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{if(touchY==null)return;const d=touchY-e.changedTouches[0].clientY;if(Math.abs(d)>50)d>0?next():prev();touchY=null},{passive:true});
+$('#world').addEventListener('click',()=>{if(!isNarrow())next()});
+
+/* =====================================================================
+   three.js 場景：濃霧水墨 ↔ 霧散淡彩 由 mood 控制
+   ===================================================================== */
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const canvas=$('#world');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const SKY={dark:new THREE.Color('#bdb099'),bright:new THREE.Color('#e6dcc6')};
+scene.background=SKY.dark.clone();
+scene.fog=new THREE.FogExp2(SKY.dark.clone(),.0065);
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.2;
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.2,2000);
+
+const hemi=new THREE.HemisphereLight(0xe8dfcc,0x6b5f50,1.3);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xf3e3c6,.8);sun.position.set(-40,60,30);sun.castShadow=true;
+Object.assign(sun.shadow.camera,{left:-90,right:90,top:60,bottom:-60,near:1,far:240});sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;
+scene.add(sun,sun.target);sun.target.position.set(15,0,-5);sun.position.set(-25,60,25);
+
+/* 後製：水墨描邊、去飽和、暖色、宣紙紋理、暗角 */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+composer.addPass(new OutputPass());
+const ink=new ShaderPass({
+  uniforms:{tDiffuse:{value:null},res:{value:new THREE.Vector2(innerWidth,innerHeight)},sat:{value:.3},warm:{value:.6},vig:{value:.4},inkK:{value:1}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform sampler2D tDiffuse;uniform vec2 res;uniform float sat,warm,vig,inkK;varying vec2 vUv;
+    float lum(vec2 o){return dot(texture2D(tDiffuse,vUv+o/res).rgb,vec3(.299,.587,.114));}
+    float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
+    void main(){
+      vec4 c=texture2D(tDiffuse,vUv);float l=dot(c.rgb,vec3(.299,.587,.114));
+      float s=1.4,tl=lum(vec2(-s,s)),t=lum(vec2(0,s)),tr=lum(vec2(s,s)),ml=lum(vec2(-s,0)),mr=lum(vec2(s,0)),bl=lum(vec2(-s,-s)),b=lum(vec2(0,-s)),br=lum(vec2(s,-s));
+      float gx=-tl-2.*ml-bl+tr+2.*mr+br,gy=-tl-2.*t-tr+bl+2.*b+br;
+      float bn=vn(vUv*res/7.);
+      float e=smoothstep(.07,.4,sqrt(gx*gx+gy*gy)*(.6+.8*bn));
+      vec3 g=mix(vec3(l),c.rgb,sat);
+      g=mix(g,g*vec3(1.07,1.,.84),warm);
+      g=mix(g,vec3(.17,.14,.12),e*inkK*.85);
+      float pn=vn(vUv*res/2.2)*.45+vn(vUv*res/36.)*.55;
+      g*=.92+.1*pn;
+      float d=distance(vUv,vec2(.5));g*=1.-vig*smoothstep(.35,.95,d);
+      gl_FragColor=vec4(g,1.);}`});
+composer.addPass(ink);
+const setRes=()=>{const v=new THREE.Vector2();renderer.getDrawingBufferSize(v);ink.uniforms.res.value.copy(v)};setRes();
+
+/* 地面外圍延伸，融入霧中 */
+const outer=new THREE.Mesh(new THREE.CircleGeometry(900,48),new THREE.MeshStandardMaterial({color:'#c4b89f',roughness:1}));
+outer.rotation.x=-Math.PI/2;outer.position.y=-.3;outer.receiveShadow=true;scene.add(outer);
+
+/* 棕灰雲帶：少數幾條在中景偶爾飄過（點綴，不是濾鏡） */
+const mistTex=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  for(let i=0;i<7;i++){const x=44+Math.random()*40,y=56+Math.random()*16,r=20+Math.random()*16,gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t})();
+const mists=[...Array(9)].map((_,i)=>{
+  const m=new THREE.Sprite(new THREE.SpriteMaterial({map:mistTex,color:'#7d6c58',transparent:true,opacity:.4,depthWrite:false}));
+  const w=30+Math.random()*24;m.scale.set(w,w*.3,1);
+  m.position.set(-60+i/9*155,4+Math.random()*9,-45+Math.random()*80);
+  m.userData={vx:1.2+Math.random(),base:.3+Math.random()*.2,ph:Math.random()*6};scene.add(m);return m});
+
+/* 杏花瓣：講學與結尾時從杏樹飄落 */
+const petals=(()=>{const n=220,a=new Float32Array(n*3);
+  for(let i=0;i<n;i++)a.set([-3.6+(Math.random()-.5)*9,Math.random()*7,-1.4+(Math.random()-.5)*9],i*3);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(a,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({color:'#e9cfc6',size:3,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false}));scene.add(m);return m})();
+
+/* =====================================================================
+   場景中的位置（three 座標 [x, z]；Blender (x,y) → three (x, -y)）
+   ===================================================================== */
+const SP={homeDoor:[-28,10.8],homeYard:[-28,15.6],granary:[-19,19.6],granaryW:[-21.5,20.2],roadW:[-24,17],roadMid:[-12,6],
+  altarFront:[0,8],altarStep:[0,6.6],master:[0,-.1],masterStand:[0,1.4],
+  meetK:[-6.4,-5.6],meetL:[-8,-7],
+  hall:[12,-12.4],hallStep:[12,-9.6],hallRoad:[13,-6],town:[14,6],gateIn:[21,6],gateOut:[27,6],
+  bridgeE:[38,5.4],kuang:[44.6,1.8],song:[53.4,10.6],zhengOut:[59,4],zhengIn:[55,9],gate:[57.3,5.7],pavIn:[64.5,-5.4],
+  study:[-12,-9.6],desk:[-12,-14.6],deskSide:[-13.8,-12],deskBack:[-13.8,-14.6],tomb:[-31,-19],hut:[-24,-21.8]};
+const SEAT=i=>{const a=i/8*Math.PI*2+.2;return[Math.cos(a)*2.8,2.6+Math.sin(a)*2.8]};
+const SEATS=[0,1,2,3,4,5,7].map(SEAT);
+const DISC=['顏回','子路','子貢','弟子_1','弟子_2','弟子_3','弟子_4','弟子_5'];
+const TRAVEL=[[24,6],[33,6],[40,5],[45,1],[50,5],[53,10],[57,6],[60,3],[63,-4],[64.5,-6.3]];   // 終點停在亭子台階前
+const CART=[[30,6],[48.5,5.6],[49.5,8.5],[49.5,8.5],[61,1]];
+const CART_VIA=[[],[[37.5,6],[40,5.2],[46,6.6]],[],[],[[50.5,12.5],[54.5,8.5],[57.3,5.7],[60,3]]];   // 馬車沿路走、穿過城門洞
+const G=[[0,0],[-1.3,1.1],[1.2,.5],[.2,1.6]];   // 隨行弟子相對孔子的位置
+const off=([x,z],dx,dz)=>[x+dx,z+dz];
+
+/* 地面高度：站上石台、朝堂、橋時抬高 */
+function groundY(x,z){
+  if(Math.abs(x)<4.6&&Math.abs(z-2)<4.6)return .88;
+  if(Math.abs(x)<1.5&&z>6.4&&z<7.6)return .35;
+  if(Math.abs(x+12)<4&&Math.abs(z+13)<3)return .5;
+  if(Math.abs(x-12)<9.5&&Math.abs(z+17)<6)return 1.6;
+  if(Math.abs(x-12)<2.5&&z>-11.1&&z<-7.9)return .8;
+  if(Math.abs(x-33)<4.5&&Math.abs(z-6)<1.6)return .95;
+  if(Math.hypot(x-64.5,z+9)<2.9)return .45;
+  if(Math.abs(x-64.5)<1.1&&z>-6.3&&z<-5.3)return .22;
+  return 0;
+}
+
+/* 每頁每步，角色要走的路線：r = 路徑（第一點為起點）、face = 停下後面向、pose = sit / slump / bow / play / wave、size = 縮放 */
+function planFor(id,st){
+  const p={};
+  const seated=(o={})=>DISC.slice(0,7).forEach((n,i)=>p[n]={r:[SEATS[i]],face:SP.master,pose:'sit',...o});
+  const group=(from,pts,end,faceTo,o={})=>['孔子','顏回','子貢','子路'].forEach((n,i)=>
+    p[n]={r:[off(from,...G[i]),...pts,off(end,...G[i])],face:faceTo,delay:i*350,...o});
+  switch(id){
+    case'cover':seated();p['孔子']={r:[SP.masterStand],face:[0,20]};break;
+    case'birth':
+      if(st===0){p['母親']={r:[SP.homeDoor],face:[-20,30]};p['孔子']={r:[off(SP.homeDoor,1.1,.6)],face:[-20,30],size:.55};}
+      else p['孔子']={r:[off(SP.homeDoor,1.1,.6),SP.homeYard,SP.roadW,SP.granaryW,SP.granary],face:st===2?[-12,30]:[-19,10]};
+      break;
+    case'study':
+      if(st===0)p['孔子']={r:[SP.granary,SP.granaryW,SP.roadW,SP.roadMid,[-6,0],SP.meetK],face:SP.meetL};
+      else p['孔子']={r:[SP.meetK],face:SP.meetL,pose:'bow'};
+      if(st>=1)p['老子']={r:[SP.meetL],face:SP.meetK};
+      break;
+    case'teach':
+      p['孔子']={r:[SP.master],face:[0,20],pose:'play'};
+      if(st>=1){DISC.slice(0,7).forEach((n,i)=>p[n]={r:[SP.altarFront,SP.altarStep,SEATS[i]],face:SP.master,pose:'sit',delay:i*260});
+        p['弟子_5']={r:[SP.altarFront,[0,6.2]],face:SP.master,delay:1900};}
+      break;
+    case'office':
+      seated();
+      p['孔子']={r:[SP.master,[0,-1.5],[3.9,-1.5],[3.9,5.9],SP.altarStep,SP.altarFront,SP.town,SP.hallRoad,SP.hallStep,SP.hall],face:[12,20]};
+      break;
+    case'wander':{
+      if(st===0)group(SP.hall,[SP.hallStep,SP.hallRoad,SP.town,SP.gateIn,SP.gateOut],SP.bridgeE,[60,0]);
+      else if(st===1)group(SP.bridgeE,[[40,5]],SP.kuang,[47,-6]);
+      else if(st===2)group(SP.kuang,[[45,1],[50,5]],SP.song,[55.5,13.5]);
+      else if(st===3){p['孔子']={r:[SP.song,SP.gate,SP.zhengOut],face:[56,8]};
+        p['子貢']={r:[off(SP.song,1.2,.5),SP.zhengIn],face:SP.zhengOut,delay:1600};
+        p['顏回']={r:[off(SP.song,-1.3,1.1)],face:SP.zhengOut};p['子路']={r:[off(SP.song,.2,1.6)],face:SP.zhengOut}}
+      else{const thru=[SP.zhengIn,SP.gate,SP.zhengOut,[63,-4],SP.pavIn];
+        p['孔子']={r:[SP.zhengOut,[63,-4],SP.pavIn,[65.5,-7.3],[65.3,-10.3],[64.5,-10.2]],face:[64.5,0],pose:'sit'};
+        p['顏回']={r:[off(SP.song,-1.3,1.1),...thru,[63.1,-8.6]],face:[64.5,-9],pose:'sitSlump',delay:300};
+        p['子貢']={r:[SP.zhengIn,...thru.slice(1),[65.9,-8.6]],face:[64.5,-9],pose:'sitSlump',delay:600};
+        p['子路']={r:[off(SP.song,.2,1.6),...thru,[64.5,-7.2]],face:[64.5,-10],delay:900}}
+      p['馬車']={r:[st?CART[st-1]:[20,6],...CART_VIA[st],CART[st]]};
+      break;}
+    case'return':
+      if(st===0)group(SP.gateOut,[SP.gateIn,SP.town,SP.altarFront,SP.roadMid,[-8,-4]],SP.study,[-12,-20]);
+      else{p['孔子']={r:[SP.study,SP.deskSide,SP.deskBack,SP.desk],face:[-12,0],pose:'sit'};p['顏回']={r:[off(SP.study,...G[1]),[-14.4,-12.6]],face:SP.desk};p['子貢']={r:[off(SP.study,...G[2]),[-9.4,-12.4]],face:SP.desk};p['子路']={r:[off(SP.study,...G[3]),[-14.6,-10.6]],face:SP.desk}}
+      p['馬車']={r:[[20,8.5]],face:[20,20]};
+      break;
+    case'late':
+      if(st<=1)p['孔子']={r:st?[SP.study]:[SP.desk,SP.deskBack,SP.deskSide,SP.study],face:st===0?[-15,-3]:[10,6],pose:'slump'};
+      if(st===0){p['顏回']={r:[[-14.4,-12.6],[-14.2,-10],[-15.5,-7],[-17.5,-4.5]],face:[-30,6],delay:600};p['子路']={r:[[-14.6,-10.6]],face:SP.study}}
+      if(st===1)p['子路']={r:[[-14.6,-10.6],[-12,-8.2],[-7.6,-3],[-7,8],SP.altarFront,SP.town,SP.gateIn,SP.gateOut],face:[40,6],delay:300};
+      if(st===2){p['子貢']={r:[SP.hut],face:[-31,-25]};
+        ['弟子_1','弟子_2','弟子_3','弟子_4'].forEach((n,i)=>p[n]={r:[[-33.6+i*1.7,-17.4]],face:[-31,-25],pose:'bow'})}
+      break;
+    case'legacy':case'sources':
+      seated();p['弟子_5']={r:[[0,6.2]],face:SP.master};p['孔子']={r:[SP.master],face:[0,20],pose:'play'};
+      break;
+  }
+  return p;
+}
+
+/* =====================================================================
+   載入模型
+   ===================================================================== */
+let city=null;const named={},boxes={};
+const P=name=>actors[name]?actors[name].o.position.clone().add(V(0,1.9*actors[name].size,0)):named[name]?.clone()??V(0,5,0);
+const actors={};const fx={mats:{}};
+
+const manager=new THREE.LoadingManager();
+manager.onProgress=(u,l,t)=>{const p=Math.round(l/t*100);$('.loader-bar i').style.width=p+'%';$('#loadPct').textContent=`LOADING 3D SCENE · ${p}%`};
+const loader=new GLTFLoader(manager);
+const loadGLB=name=>{const b=(window.GLB||{})[name];if(!b)return Promise.reject(new Error('missing assets/models/'+name+'.glb.js'));const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return loader.parseAsync(u.buffer,'')};
+loadGLB('孔子生平').then(g=>{
+  city=g.scene;scene.add(city);
+  const tuned=new Set();
+  city.traverse(o=>{
+    if(!o.isMesh)return;
+    o.castShadow=!/地面|道路|泗水|之路|田畦|遠山/.test(o.name);o.receiveShadow=true;
+    const m=o.material;if(tuned.has(m))return;tuned.add(m);
+    m.envMapIntensity=.6;
+    if(m.emissiveIntensity>0){fx.mats[m.name]=m;m.userData.base=m.emissiveIntensity}
+  });
+  city.updateMatrixWorld(true);
+  for(const o of city.children){const b=new THREE.Box3().setFromObject(o);boxes[o.name]=b;named[o.name]=b.getCenter(new THREE.Vector3())}
+  // 角色：腳與手是子物件，原點在關節；馬車沒有四肢
+  for(const name of['孔子','母親','老子',...DISC,'馬車']){
+    const o=city.getObjectByName(name);if(!o)continue;
+    o.rotation.order='YXZ';
+    actors[name]={o,legL:o.getObjectByName(name+'_左腳'),legR:o.getObjectByName(name+'_右腳'),armL:o.getObjectByName(name+'_左手'),armR:o.getObjectByName(name+'_右手'),
+      route:null,start:0,speed:3,vis:0,visT:0,yaw:0,face:null,pose:null,phase:Math.random()*6,hideEnd:false,size:1,sizeT:1,gy:0};
+  }
+  named['魯國朝堂']=V(12,6,-16);named['杏壇']=V(0,1,2.6);named['孔子墓']=V(-31,1.6,-23);named['竹簡']=V(-12,1.2,-13.5);
+  buildTrail();
+  ready=true;
+  setShot(SLIDES[slideIdx],stepIdx,true,true);applyPlan(true);
+  $('.loader').classList.add('done');
+  if(new URLSearchParams(location.search).has('check'))runCheck();
+}).catch(e=>{const el=$('.load-error');el.innerHTML='3D 模型無法載入。請確認資料夾內的 vendor/three.bundle.min.js 與 assets/models/*.glb.js 都在（或改用 build.ps1 打包後的單一 HTML）。<br><small>'+e.message+'</small>';el.classList.add('show')});
+
+/* 周遊路線：朱砂色的行跡，隨步驟逐段畫出 */
+const trail={mesh:null,total:0,stride:0,shown:0,marks:[]};
+function buildTrail(){
+  const curve=new THREE.CatmullRomCurve3(TRAVEL.map(([x,z])=>V(x,groundY(x,z)+.25,z)));
+  const seg=240,rad=6,g=new THREE.TubeGeometry(curve,seg,.14,rad,false);
+  trail.mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:'#a3392a',transparent:true,opacity:.85,depthWrite:false}));
+  trail.total=g.index.count;trail.stride=rad*6;trail.mesh.renderOrder=2;scene.add(trail.mesh);
+  const uAt=([x,z])=>{let best=0,bd=1e9;for(let i=0;i<=400;i++){const p=curve.getPointAt(i/400),d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;best=i/400}}return best};
+  trail.marks=[SP.bridgeE,[45,1],[53,10],[57,6],[64.5,-6.3]].map(uAt);
+}
+
+/* 穿模檢查（網址加 ?check）：逐頁逐步模擬走位，沿每段路線在腳、腰、頭三個高度、身體左右兩側打射線，
+   撞到場景物件就列出來；也檢查停下的位置是否卡在物件裡、角色之間是否重疊。結果寫在 #checkOut。 */
+function runCheck(){
+  const skip=/^(地面|魯國道路|周遊之路|泗水|田畦|遠山)$/;
+  const meshes=[];
+  city.children.filter(o=>!actors[o.name]&&!skip.test(o.name)).forEach(o=>o.traverse(m=>{if(m.isMesh){m.material.side=THREE.DoubleSide;meshes.push(m)}}));
+  const top=o=>{while(o.parent&&o.parent!==city)o=o.parent;return o.name};
+  const gMax=p=>Math.max(...[[0,0],[.4,0],[-.4,0],[0,.4],[0,-.4]].map(([a,b])=>groundY(p.x+a,p.z+b)));
+  const rc=new THREE.Raycaster(), out=new Set(), pos={};
+  const cast=(tagTxt,a,dir,len,R,yBase)=>{
+    const n=V(-dir.z,0,dir.x);
+    for(const o of[-R,0,R])for(const h of[.35,1.0,1.6]){
+      rc.set(a.clone().addScaledVector(n,o).setY(yBase+h),dir);rc.far=len;
+      for(const hit of rc.intersectObjects(meshes,false)){
+        if(hit.point.y<gMax(hit.point)+.15)continue;   // 走上石台、橋的台階邊不算
+        out.add(`${tagTxt} → ${top(hit.object)} (${hit.point.x.toFixed(1)}, ${hit.point.z.toFixed(1)})`);return}}};
+  SLIDES.forEach((s,i)=>s.steps.forEach((_,j)=>{
+    const plan=planFor(s.id,j), ends=[];
+    for(const [name,spec] of Object.entries(plan)){
+      if(!spec.r)continue;
+      const R=name==='馬車'?.95:.3*(spec.size||1), pts=spec.r.map(([x,z])=>V(x,0,z)), lab=`${i+1}.${j+1} ${name}`;
+      for(let k=1;k<pts.length;k++){
+        const a=pts[k-1], d=pts[k].clone().sub(a), L=d.length();if(L<.01)continue;d.normalize();
+        cast(lab+' 走路',a,d,L+(name==='馬車'?3.8:R),R,Math.max(groundY(a.x,a.z),groundY(pts[k].x,pts[k].z)));
+      }
+      const e=pts[pts.length-1];
+      const seated=/^(sit|play)/.test(spec.pose||'');   // 坐在椅子、蓆子上是刻意的，不算卡在物件裡
+      if(name!=='馬車'&&!seated)for(let q=0;q<8;q++){const ang=q/8*Math.PI*2;cast(lab+' 停留',e,V(Math.cos(ang),0,Math.sin(ang)),R,0,groundY(e.x,e.z))}
+      if(!spec.hideEnd)ends.push([name,e,R]);
+    }
+    for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++)
+      if(ends[a][1].distanceTo(ends[b][1])<ends[a][2]+ends[b][2])out.add(`${i+1}.${j+1} ${ends[a][0]} ↔ ${ends[b][0]} 重疊`);
+  }));
+  const pre=document.createElement('pre');pre.id='checkOut';pre.textContent=out.size?[...out].join(String.fromCharCode(10)):'OK：沒有發現穿模';
+  pre.style.cssText='position:fixed;z-index:99;left:10px;top:60px;max-height:80vh;overflow:auto;background:#fff;color:#000;padding:10px;font:12px monospace';
+  document.body.appendChild(pre);
+}
+
+/* 套用本頁的角色走位 */
+function applyPlan(instant){
+  const s=SLIDES[slideIdx], plan=planFor(s.id,stepIdx), now=performance.now();
+  for(const [name,a] of Object.entries(actors)){
+    const spec=plan[name];
+    if(!spec){a.visT=0;a.route=null;continue}
+    const pts=spec.r.map(([x,z])=>V(x,0,z)), end=pts[pts.length-1];
+    a.pose=spec.pose||null;a.face=spec.face?V(spec.face[0],0,spec.face[1]):null;a.hideEnd=!!spec.hideEnd;a.sizeT=spec.size||1;
+    if(instant||reduced){
+      a.o.position.copy(end);a.route=null;a.visT=a.vis=a.hideEnd?0:1;a.size=a.sizeT;a.gy=groundY(end.x,end.z);
+      const d=a.face?a.face.clone().sub(end):(pts.length>1?end.clone().sub(pts[pts.length-2]):V(0,0,1));a.yaw=Math.atan2(d.x,d.z);
+      continue;
+    }
+    // 只比水平距離：坐在石台、站在台基上時 y 不為 0，不能因此判定「還沒到」而重走
+    const cur=V(a.o.position.x,0,a.o.position.z);
+    if(cur.distanceTo(end)<.3&&a.vis>.5){a.route=null;a.visT=a.hideEnd?0:1;continue}
+    // 正在走向同一個終點（上一步還沒走完就按下一步）：繼續走，不要拉回起點重來
+    if(a.route&&a.vis>.5&&a.route[a.route.length-1].distanceTo(end)<.01){a.visT=a.hideEnd?a.visT:1;continue}
+    if(a.vis<.05||cur.distanceTo(pts[0])>.6){a.o.position.copy(pts[0]);a.vis=0;a.size=a.sizeT;a.gy=groundY(pts[0].x,pts[0].z)}   // 不在起點：原地淡入
+    a.route=pts.slice(1);if(!a.route.length)a.route=null;
+    a.visT=1;a.start=now+(spec.delay||0);
+    let L=0,prevP=pts[0];for(const q of pts.slice(1)){L+=q.distanceTo(prevP);prevP=q}
+    a.speed=Math.max(2.4,L/5.5);
+  }
+}
+
+/* =====================================================================
+   鏡頭：每頁每步一個鏡位，換頁時沿弧線補間
+   ===================================================================== */
+function shotFor(s,st){
+  const F=(pos,tgt,who='孔子')=>({follow:who,pos,tgt});
+  switch(s.id){
+    case'cover':return{pos:V(16,9,24),tgt:V(1,1.6,1),orbit:true};
+    case'birth':return[{pos:V(-33,4.5,22),tgt:V(-27.5,1.6,10.5)},F(V(-5,5,11),V(0,1.2,0)),{pos:V(-23,2.8,25.5),tgt:V(-19.3,1.5,19.8)}][st];
+    case'study':return[F(V(-7,6,9),V(0,1.3,0)),{pos:V(-1,3.4,-10),tgt:V(-7.3,1.4,-6.4)},{pos:V(0,5,-13),tgt:V(-7,1.4,-6.4)}][st];
+    case'teach':return[{pos:V(5.5,3.4,7.5),tgt:V(0,1.5,0)},{pos:V(9,8,15),tgt:V(0,1,2.4)},{pos:V(5,3.2,8),tgt:V(.5,1.4,3.6)}][st];
+    case'office':return[F(V(8,7,12),V(0,1.5,-1)),{pos:V(26,12,12),tgt:V(12,4,-15)},{pos:V(-2,14,10),tgt:V(12,4,-15)}][st];
+    case'wander':return[F(V(-8,8,14),V(2,1,-2)),F(V(-8,7,12),V(1,1.4,-2)),F(V(-8.4,4.6,11.4),V(1,1.8,0)),{pos:V(64,5,-5),tgt:V(57.6,2,5.4)},{pos:V(59,4,-1),tgt:V(64.5,1,-8.6)}][st];
+    case'return':return st===0?F(V(4,7,12),V(0,1.3,-1)):{pos:V(-10.6,3.4,-7.6),tgt:V(-12,1.3,-13.6)};
+    case'late':return[{pos:V(-8,4,-2.5),tgt:V(-13,1.4,-9.5)},F(V(6,6,10),V(-1,1.5,-1),'子路'),{pos:V(-20,5,-9),tgt:V(-30,1.5,-21)}][st];
+    case'legacy':return{pos:V(12,8,17),tgt:V(0,1.6,2),orbit:true};
+    case'sources':return{pos:V(6,46,66),tgt:V(16,0,-4)};
+  }
+}
+function offsetFor(layout){if(isNarrow())return{x:0,y:.2};return layout==='left'||layout==='hero'?{x:-.17,y:0}:layout==='right'?{x:.17,y:0}:layout==='bottom'?{x:0,y:.2}:{x:0,y:0}}
+const cam={follow:null,fOff:V(0,0,0),fLook:V(0,0,0),from:V(0,0,0),fromT:V(0,0,0),to:V(0,0,0),toT:V(0,0,0),tgt:V(0,0,0),start:0,dur:1,lift:0,orbit:false,off:{x:0,y:0},offNow:{x:0,y:0}};
+function setShot(s,step,slideChanged,instant=false){
+  const sh=shotFor(s,step);
+  // follow：pos / tgt 是相對於主角腳下的位移，鏡頭每幀跟著主角走
+  cam.follow=sh.follow?actors[sh.follow]:null;
+  if(cam.follow){cam.fOff=sh.pos.clone();cam.fLook=sh.tgt.clone();const ap=cam.follow.o.position;sh.pos=V(ap.x,0,ap.z).add(cam.fOff);sh.tgt=V(ap.x,0,ap.z).add(cam.fLook)}
+  cam.from.copy(camera.position);cam.fromT.copy(cam.tgt);
+  cam.to.copy(sh.pos);cam.toT.copy(sh.tgt);cam.orbit=!!sh.orbit;
+  const dist=cam.from.distanceTo(cam.to);
+  cam.dur=instant||reduced?1:THREE.MathUtils.clamp(900+dist*14,1200,2600);
+  cam.lift=dist>40?Math.min(30,dist*.2):dist*.15;
+  cam.start=performance.now();
+  cam.off=offsetFor(s.steps[step].layout);
+  if(instant){camera.position.copy(sh.pos);cam.tgt.copy(sh.tgt);cam.offNow={...cam.off}}
+}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const moodTarget=()=>{const s=SLIDES[slideIdx];return Array.isArray(s.mood)?s.mood[stepIdx]:s.mood};
+let mood=moodTarget();
+
+/* =====================================================================
+   每一幀
+   ===================================================================== */
+const tmp=new THREE.Vector3(), clock=new THREE.Clock();
+function project(v){tmp.copy(v).project(camera);return{x:(tmp.x*.5+.5)*innerWidth,y:(-tmp.y*.5+.5)*innerHeight,ok:tmp.z>-1&&tmp.z<1}}
+const angLerp=(a,b,k)=>{let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return a+d*k};
+
+function updateActor(a,t,dt,now){
+  let moving=false,yawT=a.yaw;
+  if(a.route&&now>=a.start){
+    const tgt=a.route[0], d=tgt.clone().sub(a.o.position);d.y=0;const dist=d.length(), step=a.speed*dt;
+    if(dist<=step){a.o.position.copy(tgt);a.route.shift();if(!a.route.length){a.route=null;if(a.hideEnd)a.visT=0}}
+    else a.o.position.addScaledVector(d.normalize(),step);
+    if(dist>.01)yawT=Math.atan2(d.x,d.z);moving=true;
+  }else if(a.face){const d=a.face.clone().sub(a.o.position);yawT=Math.atan2(d.x,d.z)}
+  a.yaw=still?yawT:angLerp(a.yaw,yawT,Math.min(1,dt*8));
+  a.o.rotation.y=a.yaw;
+  // 淡入淡出（縮放）與身形大小（童年→成年）
+  a.vis+=(a.visT-a.vis)*(still?1:Math.min(1,dt*6));
+  a.size+=(a.sizeT-a.size)*(still?1:Math.min(1,dt*2));
+  const sc=Math.max(.001,a.vis*a.size);a.o.scale.setScalar(sc);a.o.visible=a.vis>.02;
+  // 肢體
+  let legX=0,armXL=0,armXR=0,armZL=0,armZR=0,tilt=0,y=0;
+  if(moving){a.phase+=dt*a.speed*3.4;const s=Math.sin(a.phase);legX=s*.6;armXL=-s*.45;armXR=s*.45;y=Math.abs(Math.cos(a.phase))*.04;if(a.pose==='slump')tilt=.12}
+  else{
+    const br=Math.sin(t*2+a.phase)*.04;armZL=-.06-br;armZR=.06+br;
+    if(a.pose==='sit'||a.pose==='sitSlump'||a.pose==='play'){legX=-1.45;armXL=armXR=-1.0;y=-.42;if(a.pose==='sitSlump'){tilt=.38;armXL=armXR=-1.3}
+      if(a.pose==='play'){armXL=-1.15+Math.sin(t*4+a.phase)*.12;armXR=-1.15+Math.sin(t*4.6+a.phase+1)*.12}}
+    else if(a.pose==='slump'){tilt=.22;armZL=-.02;armZR=.02}
+    else if(a.pose==='bow'){tilt=.42;armXL=armXR=-1.2;armZL=.3;armZR=-.3}
+    else if(a.pose==='wave'){armZL=-2.5-Math.sin(t*5+a.phase)*.35;armZR=2.5+Math.sin(t*5+a.phase+1)*.35}
+  }
+  const k=still?1:Math.min(1,dt*10);
+  const L=(o,x,z)=>{if(!o)return;o.rotation.x+=(x-o.rotation.x)*k;o.rotation.z+=(z-o.rotation.z)*k};
+  if(moving){a.legL&&(a.legL.rotation.x=legX);a.legR&&(a.legR.rotation.x=-legX);a.armL&&(a.armL.rotation.x=armXL,a.armL.rotation.z=-.06);a.armR&&(a.armR.rotation.x=armXR,a.armR.rotation.z=.06)}
+  else{L(a.legL,legX,0);L(a.legR,legX,0);L(a.armL,armXL,armZL);L(a.armR,armXR,armZR)}
+  a.o.rotation.x+=(tilt-a.o.rotation.x)*k;
+  a.gy+=(groundY(a.o.position.x,a.o.position.z)-a.gy)*(still?1:Math.min(1,dt*10));
+  a.o.position.y=a.gy+(a.legL?y*a.size:0);
+}
+
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,clock.getDelta()), t=still?0:clock.elapsedTime, now=performance.now();
+  if(!ready){composer.render();return}
+  const s=SLIDES[slideIdx], st=stepIdx;
+
+  // 鏡頭補間（二次貝茲弧線）＋待機微晃
+  if(cam.follow){const ap=cam.follow.o.position;cam.to.set(ap.x,0,ap.z).add(cam.fOff);cam.toT.set(ap.x,0,ap.z).add(cam.fLook)}
+  const k=Math.min(1,(now-cam.start)/cam.dur), e=ease(k);
+  const mid=cam.from.clone().lerp(cam.to,.5);mid.y+=cam.lift;
+  const p=cam.from.clone().multiplyScalar((1-e)**2).add(mid.multiplyScalar(2*(1-e)*e)).add(cam.to.clone().multiplyScalar(e*e));
+  cam.tgt.lerpVectors(cam.fromT,cam.toT,e);
+  if(cam.orbit&&k>=1&&!still){const cx=cam.toT.x,cz=cam.toT.z,r=Math.hypot(cam.to.x-cx,cam.to.z-cz),a0=Math.atan2(cam.to.z-cz,cam.to.x-cx),a=a0+(now-cam.start-cam.dur)*.00004;p.set(cx+Math.cos(a)*r,cam.to.y,cz+Math.sin(a)*r)}
+  const sway=reduced?0:Math.min(1,k)*.08;
+  p.x+=Math.sin(t*.31)*sway;p.y+=Math.sin(t*.23)*sway*.5;
+  camera.position.copy(p);camera.lookAt(cam.tgt);
+  const ok=still?1:.05;cam.offNow.x+=(cam.off.x-cam.offNow.x)*ok;cam.offNow.y+=(cam.off.y-cam.offNow.y)*ok;
+  camera.setViewOffset(innerWidth,innerHeight,cam.offNow.x*innerWidth,cam.offNow.y*innerHeight,innerWidth,innerHeight);
+
+  // 光景：mood 0 濃霧水墨 → 1 霧散淡彩
+  const mt=moodTarget();mood+=(mt-mood)*(still?1:Math.min(1,dt*1.1));
+  const m=mood, mm=m*m*(3-2*m);
+  scene.background.copy(SKY.dark).lerp(SKY.bright,mm);scene.fog.color.copy(scene.background);scene.fog.density=.0065-.003*mm;
+  outer.material.color.set('#bfb398').lerp(new THREE.Color('#d3c8b0'),mm);
+  hemi.intensity=1.1+.3*mm;sun.intensity=1.1+.6*mm;
+  renderer.toneMappingExposure=1+.08*mm;
+  ink.uniforms.sat.value=.6+.3*mm;ink.uniforms.warm.value=.4-.15*mm;ink.uniforms.vig.value=.28-.12*mm;ink.uniforms.inkK.value=.9;
+  for(const ms of mists){
+    if(!still){ms.position.x+=ms.userData.vx*dt;if(ms.position.x>95)ms.position.x=-65}
+    const near=THREE.MathUtils.smoothstep(ms.position.distanceTo(camera.position),10,28);   // 貼近鏡頭的雲淡掉，免得蓋住主體
+    ms.material.opacity=ms.userData.base*(.75+.25*(1-mm))*near;
+    ms.position.y+=Math.sin(t*.2+ms.userData.ph)*dt*.15;
+  }
+
+  // 杏花瓣：講學、結尾
+  const petalOn=['cover','teach','legacy','sources'].includes(s.id);
+  petals.material.opacity+=((petalOn?.9:0)-petals.material.opacity)*.05;petals.visible=petals.material.opacity>.02;
+  if(petals.visible&&!still){const a=petals.geometry.attributes.position.array;for(let i=0;i<a.length;i+=3){a[i+1]-=dt*.6;a[i]+=Math.sin(t+i)*dt*.4;if(a[i+1]<.9)a[i+1]=7}petals.geometry.attributes.position.needsUpdate=true}
+
+  // 營火：陳蔡之間微弱地跳動
+  const fire=fx.mats['火光'];
+  if(fire){const on=s.id==='wander'&&st===4;fire.emissiveIntensity=on?1.2+Math.sin(t*11)*.4+Math.sin(t*23)*.2:0}
+
+  // 周遊行跡：逐段畫出
+  if(trail.mesh){
+    const W=s.id==='wander', target=W?trail.marks[st]:(s.id==='return'||s.id==='sources'?1:0);
+    trail.shown+=(target-trail.shown)*(still?1:Math.min(1,dt*1.4));
+    const n=Math.floor(trail.shown*trail.total/trail.stride)*trail.stride;trail.mesh.geometry.setDrawRange(0,n);
+    const op=W?.85:(s.id==='return'||s.id==='sources')?.35:0;
+    trail.mesh.material.opacity+=(op-trail.mesh.material.opacity)*.06;trail.mesh.visible=n>0&&trail.mesh.material.opacity>.02;
+  }
+
+  // 角色
+  for(const a of Object.values(actors))updateActor(a,t,dt,now);
+
+  // 指引線與標籤（鏡頭到位後才出現）
+  const stp=s.steps[st], focus=stp.focus??s.focus, ftag=stp.tag??s.tag;
+  const fa=focus&&actors[focus];
+  if(focus&&k>.92&&!isNarrow()&&(!fa||fa.vis>.5)){
+    const sp=project(P(focus)),r=card.getBoundingClientRect();
+    if(sp.ok&&sp.x>0&&sp.x<innerWidth&&sp.y>0&&sp.y<innerHeight){
+      const leftSide=sp.x>r.right, ax=leftSide?r.right:r.left, ay=THREE.MathUtils.clamp(sp.y,r.top+40,r.bottom-40);
+      const cx=(ax+sp.x)/2;
+      leaderPath.setAttribute('d',`M${ax},${ay} C${cx},${ay} ${cx},${sp.y} ${sp.x},${sp.y}`);
+      leaderDot.setAttribute('cx',sp.x);leaderDot.setAttribute('cy',sp.y);leaderRing.setAttribute('cx',sp.x);leaderRing.setAttribute('cy',sp.y);
+      leader.classList.add('show');
+      tag.textContent=ftag;tag.style.transform=`translate(${sp.x+(leftSide?18:-18-tag.offsetWidth)}px,${sp.y-44}px)`;tag.classList.add('show');
+    }else{leader.classList.remove('show');tag.classList.remove('show')}
+  }else{leader.classList.remove('show');tag.classList.remove('show')}
+
+  composer.render();
+}
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);setRes();if(ready)cam.off=offsetFor(SLIDES[slideIdx].steps[stepIdx].layout)});
+
+/* 啟動：支援網址 #頁碼.步驟 */
+const [hashSlide,hashStep]=location.hash.slice(1).split('.');
+const startAt=Math.max(0,Math.min(SLIDES.length-1,(parseInt(hashSlide)||1)-1));
+go(startAt,(parseInt(hashStep)||1)-1,true);
+mood=moodTarget();
+camera.position.set(16,9,24);cam.tgt.set(1,1.6,1);
+frame();
+</script>
+</body>
+</html>

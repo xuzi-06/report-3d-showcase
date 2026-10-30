@@ -83,6 +83,17 @@ loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader
 - **鏡頭跟拍主角**：主角長距離走位時，`shotFor` 回傳 `{follow:'角色名', pos, tgt}`，`pos`／`tgt` 當成相對主角腳下的位移；`setShot` 記下位移，`frame()` 每幀用主角目前位置更新 `cam.to`／`cam.toT`，鏡頭就會沿弧線飛到主角身邊後跟著走。位移要選在主角整條路線上都不會被建築擋住的方向。
 - **穿模檢查**：在頁面加一個 `?check` 模式，模型載入後逐頁逐步呼叫 `planFor()`，對每段路線用 `THREE.Raycaster` 在腳、腰、頭三個高度（約 0.35／1.0／1.6m）、身體中線與左右兩側打水平射線，射線長度＝該段長度（車輛再加車頭長度）；材質暫時設 `DoubleSide` 才抓得到「站在物件裡面」；落在台基、橋面高度以下的命中（走上台階）略過。另外檢查每步終點站位彼此距離是否小於兩人半徑和。結果寫進頁面的 `<pre id="checkOut">`，用 `msedge --headless=new --dump-dom "<檔案>?check"` 讀出來，清單為空才算通過。
 
+## 水墨古風主題（歷史、人物傳記類）
+
+`assets/example-ink/`（「孔子生平」，10 頁）沿用敘事架構，改成宣紙水墨畫風：
+
+- **後製只留水墨 pass**：`RenderPass` → `OutputPass` → 自訂 `ShaderPass`（Sobel 描邊加噪聲當筆觸、去飽和、偏暖、宣紙纖維紋理、淡暗角），不用光暈。`res` uniform 要用 `renderer.getDrawingBufferSize()`，resize 時更新。
+- **雲霧是點綴**：霧要淡（`FogExp2` 約 .003–.0065），飽和度 .6 以上，主體才清楚；另外放幾條棕灰雲帶（`Sprite`＋canvas 柔邊貼圖），在中景慢慢飄，離鏡頭太近時淡掉。canvas 漸層不可碰到貼圖邊緣，否則雲帶會出現直線硬邊，還會被描邊放大。
+- **地面高度 `groundY(x,z)`**：角色走上石台、台基、橋面時抬高，`updateActor` 每幀把 `position.y` 插值到地面高度。判斷「是否已走到終點」只能比水平距離。
+- **路線行跡**：`TubeGeometry` 沿路線建好，用 `setDrawRange` 隨步驟逐段畫出。終點要停在建築外，不要穿進台基。
+- **童年→成年**：角色 spec 可帶 `size`，`a.size` 每幀插值。
+- 建模腳本 `assets/models/孔子生平.py` 示範不用 MCP 的做法：`blender --background --factory-startup --python 孔子生平.py`，以 three 座標規劃、`T(x,z)` 換成 Blender 座標，人物四肢為子物件、原點在關節。
+
 ## 動態物件
 
 以名稱前綴抓物件（`city.children.filter(o=>o.name.startsWith('自駕車_'))`），在 `frame()` 中更新：

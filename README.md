@@ -14,11 +14,12 @@
 
 ## 範例
 
-三份範例只示範格式與動畫手法，不是要套用的大綱：
+四份範例只示範格式與動畫手法，不是要套用的大綱：
 
 - **淺色生活風** `assets/example/` —「資通訊科技與住」，13 頁、含完整講稿
 - **夜景霓虹風** `assets/example-dark/` —「科技與未來城市」，10 頁
 - **灰暗→明亮敘事風** `assets/example-story/` —「斷在學校：從輔導觀點看中途離校與輟學」，9 頁、含完整講稿；角色小人（學生、警察、老師、社工）依頁面走位，畫面從灰暗雨天逐步調亮
+- **水墨古風敘事** `assets/example-ink/` —「孔子生平：一位老師的七十三年」，10 頁、含完整講稿；宣紙色調、水墨描邊與棕灰雲帶，孔子與弟子從陬邑故居、杏壇、朝堂一路周遊列國，鏡頭跟著主角走
 
 直接預覽範例：雙擊範例資料夾裡的 `main.html` 即可。要產生單一檔案：`powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Project assets\example`。
 
@@ -70,7 +71,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 瀏覽器禁止 `file://` 頁面用 fetch 讀取本機檔案，所以這裡改用 `<script src>` 載入所有資源：
 - three.js 與用到的 addons 預先打包成 `vendor/three.bundle.min.js`，放在每個範本資料夾內，整個資料夾可直接帶到別台電腦（IIFE，掛在 `window.THREE`／`window.THREE_ADDONS`），不再透過 CDN 用 import 載入
 - GLB 轉成 base64 的 `.glb.js`，用 `<script src>` 載入後交給 `GLTFLoader.parseAsync` 解析
-- `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，三份範例打包後約 1.8～3.6MB
+- `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，四份範例打包後約 1.8～3.6MB
 
 ## 檔案結構
 
@@ -82,7 +83,8 @@ report-3d-showcase/
 │  ├─ 文案範本.md               # 給使用者填寫的文案格式
 │  ├─ example/                 # 淺色生活風範例（每個範例資料夾都含 main.html、vendor/three.bundle.min.js、assets/models/）
 │  ├─ example-dark/            # 夜景霓虹風範例
-│  └─ example-story/           # 灰暗→明亮敘事風範例（角色動畫）
+│  ├─ example-story/           # 灰暗→明亮敘事風範例（角色動畫）
+│  └─ example-ink/             # 水墨古風敘事範例（含 Blender 背景模式建模腳本）
 ├─ references/
 │  ├─ blender-mcp-setup.md     # Blender MCP 安裝與檢查
 │  ├─ modeling-guide.md        # 建模規範（具名物件、cutaway、匯出）
@@ -98,4 +100,4 @@ report-3d-showcase/
 
 ## 授權
 
-範例中的文案與模型屬於原報告作者；範本程式碼可自由修改使用。各範例的 `vendor/three.bundle.min.js` 內含 [three.js](https://threejs.org/)（MIT，見 `assets/vendor/three.LICENSE.txt`）。
+範例中的文案與模型屬於原報告作者（`example-ink` 的文案由 Claude 依《史記》《論語》等史料草擬，僅作示範）；範本程式碼可自由修改使用。各範例的 `vendor/three.bundle.min.js` 內含 [three.js](https://threejs.org/)（MIT，見 `assets/vendor/three.LICENSE.txt`）。
