@@ -47,11 +47,11 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 流程：
 
 0. **收集文案**：整理成逐頁清單給你確認。沒有文案時會給你 `assets/文案範本.md` 填寫，不會自行代寫
-1. **檢查 Blender MCP** 是否可連線
-2. **安裝 Blender MCP**（若未就緒，會先徵求同意）
-3. **建模**：依文案決定要建哪些物件，分批建模並截圖檢查，匯出 GLB
-4. **前端**：把範本的 `SLIDES` 整個換成你的文案，設定鏡位與資料流
-5. **打包**：`scripts/build.ps1` 把模型與程式全部內嵌成 `dist/<標題>.html`，並以 `file://` 和斷網兩種情況截圖驗證
+1. **檢查 Blender MCP**：未就緒時會先徵求同意再安裝
+2. **建模**：依文案決定要建哪些物件，分批建模並截圖檢查，匯出 GLB
+3. **前端**：複製範本，把 `SLIDES` 整個換成你的文案，設定鏡位與資料流
+4. **打包**：`scripts/build.ps1` 把模型與程式全部內嵌成 `dist/<標題>.html`
+5. **驗證**：以 `file://` 和斷網兩種情況截圖檢查，並逐頁核對文案
 
 完成後把 `dist/<標題>.html` 複製到報告用的電腦，雙擊開始報告。
 
@@ -67,7 +67,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 
 ## 為什麼不用伺服器也能跑
 
-瀏覽器禁止 `file://` 頁面用 fetch 讀取本機檔案，舊版因此需要 Python 伺服器。新版的做法：
+瀏覽器禁止 `file://` 頁面用 fetch 讀取本機檔案，所以這裡改用 `<script src>` 載入所有資源：
 - three.js 與用到的 addons 預先打包成 `vendor/three.bundle.min.js`，放在每個範本資料夾內，整個資料夾可直接帶到別台電腦（IIFE，掛在 `window.THREE`／`window.THREE_ADDONS`），不再透過 CDN 用 import 載入
 - GLB 轉成 base64 的 `.glb.js`，用 `<script src>` 載入後交給 `GLTFLoader.parseAsync` 解析
 - `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，三份範例打包後約 1.8～3.6MB
@@ -94,10 +94,7 @@ report-3d-showcase/
 
 ## 作者
 
-- **xuzi-06**：工作流程設計、報告文案與需求、測試回饋
-- **Claude**（Anthropic，透過 Claude Code）：協作開發 SKILL、Blender 建模腳本、three.js 前端與單檔打包流程
-
-本專案是人與 AI 協作完成的成果。
+**xuzi-06**（開發過程使用 [Claude Code](https://claude.com/claude-code) 輔助）
 
 ## 授權
 

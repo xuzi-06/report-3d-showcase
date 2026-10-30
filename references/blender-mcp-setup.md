@@ -9,7 +9,7 @@ Blender MCP 由兩半組成，兩半都要就緒才能建模：
 
 1. 本工作階段是否有 `mcp__blender__*` 工具（可能是延遲載入，用 ToolSearch 搜 `blender` 取得 schema）。
 2. 有工具 → 呼叫 `get_addon_status`：
-   - 成功 → 已就緒，看一下 `warning`（外掛版本落後通常不影響 `execute_blender_code` / `look`），跳到步驟 3。
+   - 成功 → 已就緒，看一下 `warning`（外掛版本落後通常不影響 `execute_blender_code` / `look`），跳到 SKILL.md 的步驟 2（建模）。
    - 「Could not connect to Blender」→ 多半只是 **Blender 沒開**。見下方「啟動 Blender」。
 3. 沒有工具 → 需要安裝，見下方。
 
