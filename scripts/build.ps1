@@ -58,7 +58,7 @@ if ($html -match '<script\s+type="importmap"') { "warning: importmap found - ES 
 
 if (-not $Out) {
   $title = 'presentation'
-  if ($html -match '<title>([^<]+)</title>') { $title = ($Matches[1] -split '[|｜]')[0].Trim() }
+  if ($html -match '<title>([^<]+)</title>') { $title = ($Matches[1] -split '[|\uFF5C]')[0].Trim() }
   $title = $title -replace '[\\/:*?"<>|]', '_'
   $Out = Join-Path (Join-Path $Project 'dist') "$title.html"
 }

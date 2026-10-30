@@ -42,6 +42,7 @@ description: 把使用者提供的報告文案／講稿／大綱，做成一套�
 - 成功 → 步驟 2。
 - 有工具但連不上 → 通常是 Blender 沒開，直接幫忙啟動。
 - 沒有工具 → 依 `references/blender-mcp-setup.md` 安裝（uv、`claude mcp add`、Blender 外掛、按 Connect）。安裝會改動使用者環境，先說明並取得同意；新註冊的 MCP 要重啟 Claude Code 才生效，明確告訴使用者重啟後說「繼續」。
+- 沒有 MCP 但電腦裝了 Blender（也可能在 Steam 資料夾，查登錄檔的解除安裝清單）→ 可以不安裝任何東西，把建模寫成 Python 腳本，用 `blender --background --factory-startup --python <腳本>` 建模並匯出 GLB，再用截圖檢查成品。腳本存在 `<專案>/assets/models/`，方便之後修改。
 
 ### 2. 建構 3D 模型
 讀 `references/modeling-guide.md`。物件清單來自文案每頁的「畫面要看到什麼」：每個要特寫的東西都要有唯一中文名稱的具名物件（前端靠名稱定位），多樓層外牆加 `cutaway` 自訂屬性。風格依使用者指定的氛圍，沒指定時參考對應範本的風格。
