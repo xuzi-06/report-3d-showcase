@@ -202,7 +202,7 @@ const {GLTFLoader,RoomEnvironment}=window.THREE_ADDONS;
    ===================================================================== */
 const SLIDES = [
 { id:'cover', label:'開場', sky:'high', title:'資通訊科技<br>與<em>住</em>',
-  dek:'從天上的通訊衛星，到家門口的一枚指紋——看資通訊科技如何走進住宅，又如何讓住宅資料在合法、受保護的前提下，支援公共服務。',
+  dek:'從衛星到門口的指紋：科技走進住宅',
   chips:['5G / 6G','智慧住宅','能源管理','資料治理'],
   steps:[{layout:'hero',parts:['dek','chips']}],
   notes:`各位老師、同學好，我們這組報告的主題是「資通訊科技與住」。
@@ -216,11 +216,11 @@ const SLIDES = [
 那我們就從天空開始。` },
 
 { id:'network', label:'5G→6G', sky:'high', title:'連線，<br>從<em>天空</em>開始',
-  dek:'住宅對外的連線，正從光纖、行動網路延伸到衛星。5G 已廣泛商轉；6G 以 ITU 的 IMT-2030 為框架，目標之一是把地面與非地面（衛星）網路整合起來。',
+  dek:'連線從光纖、5G 延伸到衛星',
   diagram:{type:'cols',items:[
-    {k:'NOW · 5G',cls:'now',h:'已在使用',li:['高速率、低延遲、大量連結','家用寬頻、行動上網、物聯網','依賴地面基地台覆蓋']},
-    {k:'NEXT · 6G / IMT-2030',h:'標準發展中',li:['ITU 已訂定願景框架，技術要求研議中','整合感知與通訊、AI 與通訊','地面網路＋衛星：無所不在的連線']},
-    {k:'FOR HOME',h:'對住宅的意義',li:['偏遠地區也能有穩定連線','災害時多一條備援路徑','更多設備同時、可靠地上線']}]},
+    {k:'NOW · 5G',cls:'now',h:'已在使用',li:['高速、低延遲','寬頻、行動、物聯網','靠地面基地台']},
+    {k:'NEXT · 6G / IMT-2030',h:'標準發展中',li:['ITU 願景已定','通訊＋感知＋AI','地面＋衛星整合']},
+    {k:'FOR HOME',h:'對住宅的意義',li:['偏鄉也有連線','災時備援','更多設備上線']}]},
   steps:[{layout:'right',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
   sources:[['ITU｜IMT-2030（6G）','https://www.itu.int/en/ITU-R/study-groups/rsg5/rwp5d/imt-2030/pages/default.aspx'],['ITU｜IMT-2030 技術要求','https://www.itu.int/hub/2026/03/imt-2030-technical-requirements-for-the-6g-future/']],
   notes:`先看連線。現在畫面上有三個角色：天上的衛星、左邊的 5G 基地台，以及我們的住宅。流動的光點，代表資料在它們之間傳遞。
@@ -234,13 +234,13 @@ const SLIDES = [
 不過，對外的連線再快，家裡面還是需要一套系統把設備串起來。接下來，我們就降落到這棟房子。` },
 
 { id:'system', label:'系統總覽', sky:'day', title:'一棟會<br><em>回應</em>的房子',
-  dek:'這棟三層住宅放進了七個關鍵設備。它們各自分工，經由家庭網路協作——點選畫面上的標籤可以直接跳到該設備。',
-  facts:['<b>一樓・玄關與電力：</b>生物識別門鎖、智慧開關、智慧電表、家庭閘道器','<b>二樓・客廳：</b>空氣品質感測器，連動空調','<b>三樓・書房：</b>家庭邊緣運算主機、儲能電池；<b>屋頂：</b>太陽能板','<b>實際案例：</b>台達在台灣的智慧建築案例，如新竹元太廠、台北瑞光總部、竹北普生竹創，用途與認證各不相同'],
+  dek:'七個設備，一套家庭網路',
+  facts:['<b>1F：</b>門鎖、開關、電表、閘道器','<b>2F：</b>空氣品質感測器','<b>3F：</b>邊緣主機、儲能電池','<b>屋頂：</b>太陽能板'],
   diagram:{type:'flow',items:[
-    {k:'01 SENSE',h:'感知',p:'感測器、門鎖、電表讀取環境與設備狀態'},
-    {k:'02 DECIDE',h:'判斷',p:'閘道器或邊緣主機依規則與情境做判斷'},
-    {k:'03 ACT',h:'控制',p:'開燈、開空調、解鎖、調度儲能'},
-    {k:'04 FEEDBACK',h:'回饋',p:'確認結果並告知住戶，保留手動改變的權利'}]},
+    {k:'01 SENSE',h:'感知',p:'感測器、門鎖、電表'},
+    {k:'02 DECIDE',h:'判斷',p:'閘道器、邊緣主機'},
+    {k:'03 ACT',h:'控制',p:'燈、空調、門鎖、儲能'},
+    {k:'04 FEEDBACK',h:'回饋',p:'通知住戶，可手動'}]},
   hotspots:true,
   steps:[{layout:'left',parts:['dek','facts']},{layout:'bottom',parts:['dek','diagram']}],
   sources:[['台達｜台灣成功案例','https://esg-consulting.deltaww.com/zh-tw/success-stories'],['台達｜瑞光總部大樓','https://esg-consulting.deltaww.com/zh-tw/success-stories/ydiql497qmd2h5tylqnlsfci'],['台達｜竹北普生竹創大樓','https://esg-consulting.deltaww.com/zh-tw/success-stories/t9ygfpceqmbyxezztp5pd7d1']],
@@ -258,8 +258,8 @@ const SLIDES = [
 
 { id:'lock', label:'門鎖', sky:'day', focus:'生物識別門鎖', tagText:'一樓・生物識別門鎖',
   title:'生物識別<br><em>智慧門鎖</em>',
-  dek:'用指紋確認「你是你」，再驅動實體鎖舌。方便之外，更要想清楚：辨識失敗、沒電、資料外洩時怎麼辦？',
-  facts:['<b>運作：</b>讀取指紋特徵 → 與登錄樣板比對 → 比對通過才解鎖','<b>權限：</b>家人、訪客、臨時密碼可分級設定，並留下進出紀錄','<b>備援：</b>保留實體鑰匙或密碼；生物特徵資料宜加密保存在鎖內，不上傳雲端'],
+  dek:'指紋確認身分，再開鎖',
+  facts:['<b>運作：</b>指紋 → 比對 → 解鎖','<b>權限：</b>家人、訪客分級，留紀錄','<b>備援：</b>實體鑰匙；指紋存在鎖內'],
   steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
   sources:[['NIST SP 800-63B｜數位身分與生物辨識','https://pages.nist.gov/800-63-4/sp800-63b.html']],
   notes:`第一個設備，是大門上的生物識別門鎖。
@@ -276,8 +276,8 @@ const SLIDES = [
 
 { id:'switch', label:'智慧開關', sky:'day', focus:'智慧開關', tagText:'一樓・智慧開關',
   title:'智慧開關<br>讓控制<em>留在手邊</em>',
-  dek:'按下去就亮——這是最直覺的介面。智慧開關保留了這個習慣，再加上排程與情境自動化。',
-  facts:['<b>情境：</b>回家自動開玄關燈、離家一鍵全關、夜間只開低亮度','<b>相容：</b>開關、燈具與閘道器要支援相同協定（例如 Matter）才能互通','<b>原則：</b>斷網或系統故障時，仍要能當作一般開關使用'],
+  dek:'保留按鍵習慣，加上自動化',
+  facts:['<b>情境：</b>回家開燈、離家全關','<b>相容：</b>同一協定（如 Matter）','<b>原則：</b>斷網仍是一般開關'],
   steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
   sources:[['Connectivity Standards Alliance｜Matter','https://csa-iot.org/all-solutions/matter/']],
   notes:`門旁邊這個小小的面板，是智慧開關。
@@ -292,8 +292,8 @@ const SLIDES = [
 
 { id:'meter', label:'智慧電表', sky:'day', focus:'一樓｜智慧電表', floor:'1F', tagText:'一樓・智慧電表',
   title:'智慧電表<br>讀懂家的<em>用電</em>',
-  dek:'智慧電表（AMI，先進讀表基礎建設）能定時回傳用電資料，讓用電從「每兩個月一張帳單」變成「看得見的曲線」。',
-  facts:['<b>可觀察：</b>分時段的用電量（常見為每 15 分鐘一筆，依電業設定）','<b>可應用：</b>時間電價、異常用電提醒、節能建議','<b>隱私：</b>用電曲線能推測作息（幾點起床、何時出門），分享須經同意並限縮用途'],
+  dek:'從帳單變成用電曲線',
+  facts:['<b>觀察：</b>每 15 分鐘一筆用電','<b>應用：</b>時間電價、異常提醒','<b>隱私：</b>曲線會透露作息'],
   steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
   sources:[['經濟部｜智慧電表與 AMI','https://service.moea.gov.tw/EE514/tw/geipc/155-8023.html']],
   notes:`走進一樓。為了讓大家看清楚，我們把一樓的落地玻璃淡化了。後牆上白色的是智慧電表，旁邊深色的是電箱。
@@ -306,8 +306,8 @@ const SLIDES = [
 
 { id:'gateway', label:'閘道器', sky:'day', focus:'一樓｜家庭閘道器', floor:'1F', tagText:'一樓・家庭閘道器',
   title:'家庭閘道器<br>串起<em>所有設備</em>',
-  dek:'門鎖、開關、感測器各說各的「無線語言」。閘道器負責翻譯與轉送，也守住家與網際網路之間的那道門。',
-  facts:['<b>匯接：</b>Wi-Fi、Thread、Zigbee 等不同協定在這裡交會','<b>安全：</b>更改預設密碼、定期更新韌體、訪客與設備網路分開','<b>分工：</b>家中自動化在本地執行；遠端控制才經過雲端'],
+  dek:'翻譯協定，守住對外的門',
+  facts:['<b>匯接：</b>Wi-Fi、Thread、Zigbee','<b>安全：</b>改密碼、更新韌體、網路分開','<b>分工：</b>本地自動化，遠端才上雲'],
   steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
   sources:[['Connectivity Standards Alliance｜Matter','https://csa-iot.org/all-solutions/matter/']],
   notes:`櫃子上這台有兩根天線的，是家庭閘道器。現在畫面上的光點，就是門鎖、開關和電表把資料送到它這裡。
@@ -320,13 +320,13 @@ const SLIDES = [
 
 { id:'sensor', label:'環境感測', sky:'day', focus:'二樓｜空氣品質感測器', floor:'2F', tagText:'二樓・空氣品質感測器',
   title:'環境感測<br>讓空間<em>有回應</em>',
-  dek:'客廳牆上的空氣品質感測器，持續量測二氧化碳、PM2.5 與溫濕度，作為提醒與自動化的條件。',
-  facts:['<b>量測：</b>CO₂、PM2.5、溫度、濕度（項目依設備而異）','<b>限制：</b>讀值受安裝位置、校正與設備誤差影響','<b>原則：</b>保留人工確認與手動控制，不讓單一讀值決定一切'],
+  dek:'讀值成為自動化的條件',
+  facts:['<b>量測：</b>CO₂、PM2.5、溫濕度','<b>限制：</b>位置與校正影響讀值','<b>原則：</b>保留人工確認'],
   diagram:{type:'flow',items:[
-    {k:'SENSE',h:'感測',p:'客廳 CO₂ 讀值持續上升'},
-    {k:'DECIDE',h:'判斷',p:'超過設定值（室內空氣品質標準 CO₂ 8 小時值為 1,000 ppm）'},
-    {k:'ACT',h:'回應',p:'開啟換氣或空調送風'},
-    {k:'REPORT',h:'回報',p:'顯示環變色、手機通知，住戶可取消'}]},
+    {k:'SENSE',h:'感測',p:'CO₂ 上升'},
+    {k:'DECIDE',h:'判斷',p:'超過 1,000 ppm'},
+    {k:'ACT',h:'回應',p:'換氣、送風'},
+    {k:'REPORT',h:'回報',p:'通知，可取消'}]},
   steps:[{layout:'left',parts:['dek','facts']},{layout:'bottom',parts:['dek','diagram']}],
   sources:[['美國 EPA｜室內空氣品質監測','https://www.epa.gov/indoor-air-quality-iaq/low-cost-air-pollution-monitors-and-indoor-air-quality'],['環境部｜室內空氣品質標準','https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=O0130009']],
   notes:`上到二樓客廳。電視右邊這個有一圈綠色光環的小盒子，就是空氣品質感測器。
@@ -341,8 +341,8 @@ const SLIDES = [
 
 { id:'edge', label:'邊緣運算', sky:'day', focus:'三樓｜家庭邊緣運算主機', floor:'3F', tagText:'三樓・家庭邊緣運算主機',
   title:'家庭邊緣運算<br>在家<em>先處理</em>',
-  dek:'書房角落的小型主機，在家中就近處理自動化規則、影像辨識與資料彙整，而不是什麼都送上雲端。',
-  facts:['<b>好處：</b>反應快、斷網仍能運作、敏感資料不必離開家','<b>取捨：</b>需要更新、備份與權限管理，硬體也有使用壽命','<b>關鍵問題：</b>哪些資料留在家？哪些服務才真的需要連外？'],
+  dek:'在家就近處理，不全上雲',
+  facts:['<b>好處：</b>快、斷網可用、資料不出門','<b>代價：</b>更新、備份、權限、壽命','<b>問題：</b>哪些資料該留在家？'],
   steps:[{layout:'right',parts:['dek']},{layout:'right',parts:['dek','facts']}],
   sources:[['NIST｜邊緣運算研究','https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=934685']],
   notes:`三樓是書房。角落這台亮著四條綠燈的機櫃，是家庭邊緣運算主機。
@@ -355,8 +355,8 @@ const SLIDES = [
 
 { id:'solar', label:'屋頂能源', sky:'day', focus:'屋頂｜太陽能板', tagText:'屋頂・太陽能板',
   title:'屋頂能源<br>接上住宅<em>管理</em>',
-  dek:'屋頂的八片太陽能板、三樓的儲能電池、一樓的智慧電表，組成一個看得見的能源迴圈。',
-  facts:['<b>發電：</b>受日照、方位、遮蔭與天候影響，不是固定值','<b>調度：</b>白天先自用、多餘的儲存，晚上再放電使用','<b>回饋：</b>把發電與用電放在同一張圖上，住戶才能做出選擇'],
+  dek:'發電、儲能、電表組成能源迴圈',
+  facts:['<b>發電：</b>隨日照與天候變動','<b>調度：</b>白天自用，晚上放電','<b>回饋：</b>發電與用電放同一張圖'],
   steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
   sources:[['美國能源部｜太陽光電原理','https://www.energy.gov/cmei/systems/solar-photovoltaic-technology-basics']],
   notes:`最後來到屋頂。這裡有八片太陽能板，旁邊白色的小盒子是逆變器，負責把太陽能板產生的直流電，轉換成家裡可以使用的交流電。
@@ -374,11 +374,11 @@ const SLIDES = [
 節能最後還是要靠人的選擇，系統的角色，是讓好的選擇變得容易。` },
 
 { id:'privacy', label:'資料邊界', sky:'day', title:'隱私，從資料<br>進出家的<em>邊界</em>開始',
-  dek:'智慧住宅每天產生大量資料。真正的問題不是「有沒有資料」，而是：哪些留在家、哪些可以出門、誰有權看？',
+  dek:'哪些留在家？哪些出門？誰能看？',
   diagram:{type:'cols',items:[
-    {k:'STAY HOME',cls:'now',h:'留在家中處理',li:['門鎖指紋樣板、進出紀錄','室內影像、即時感測讀值','自動化規則與在地運算']},
-    {k:'WITH CONSENT',cls:'warn',h:'經同意才出門',li:['用電統計（給電業計費）','設備狀態（遠端維修診斷）','匿名化後的彙總資料']},
-    {k:'PRINCIPLES',h:'三個原則',li:['最小蒐集：只收必要的','在地優先：能在家處理就不上傳','可查可撤回：住戶看得懂、關得掉']}]},
+    {k:'STAY HOME',cls:'now',h:'留在家中處理',li:['指紋、進出紀錄','室內影像、感測讀值','自動化規則']},
+    {k:'WITH CONSENT',cls:'warn',h:'經同意才出門',li:['用電統計','設備診斷','匿名彙總']},
+    {k:'PRINCIPLES',h:'三個原則',li:['最小蒐集','在地優先','可查可撤回']}]},
   steps:[{layout:'right',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
   notes:`看完設備，我們把鏡頭拉遠。房子外面這層半透明的罩子，代表「家的資料邊界」。綠色光點留在家裡，橘色光點則穿出邊界、對外傳送。
 
@@ -395,12 +395,12 @@ const SLIDES = [
 我們再來看最後一個應用：公共服務。` },
 
 { id:'land', label:'地政服務', sky:'high', title:'建築資料<br>助力<em>地政服務</em>',
-  dek:'延伸建築資料的應用，思考如何改善地政的收件、查核與交接。這是改革構想：資料須依法取得、妥善保護，並由人員做最後決定。',
+  dek:'改革構想：依法取得、由人決定',
   diagram:{type:'flow',items:[
-    {k:'01 INTAKE',h:'收件與交接',p:'標準欄位自動檢核附件、分派案件；狀態與待辦隨案交接'},
-    {k:'02 FIELD',h:'外勤與上傳',p:'外勤以行動裝置上傳照片、測量成果與補件，內勤即時接續'},
-    {k:'03 REVIEW',h:'查核與保障',p:'系統提示圖資差異與缺漏，由審查人員核實決定'},
-    {k:'04 GUARD',h:'資料界線',p:'僅用授權且必要的建築資料，不自動取得住戶感測資料'}]},
+    {k:'01 INTAKE',h:'收件與交接',p:'自動檢核、分派、交接'},
+    {k:'02 FIELD',h:'外勤與上傳',p:'行動裝置即時上傳'},
+    {k:'03 REVIEW',h:'查核與保障',p:'提示差異，人員核實'},
+    {k:'04 GUARD',h:'資料界線',p:'只用授權的必要資料'}]},
   steps:[{layout:'left',parts:['dek']},{layout:'bottom',parts:['dek','diagram']}],
   sources:[['內政部｜資訊服務韌性發展計畫','https://ws.moi.gov.tw/Download.ashx?n=5YWn5pS%2F6LOH6KiK5pyN5YuZ6Z%2BM5oCn55m85bGV6KiI55WrKDExNi0xMjDlubQpLnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvNDAwL3JlbGZpbGUvMTIzNTEvMzM4NjE3L2NkYWQxODg2LThhOTYtNGJjNC1hOGZiZWYxN2ExYy5wZGY%3D'],['數位發展部｜6G 政策研議中','https://moda.gov.tw/press/clarification/20718'],['ITU｜IMT-2030 技術要求','https://www.itu.int/hub/2026/03/imt-2030-technical-requirements-for-the-6g-future/']],
   notes:`鏡頭回到高空。地面上的紅點正一個一個亮起來，每一個紅點，代表一筆需要處理的土地或建物案件；中間閃爍的大紅點和紅色光環，就是我們這棟房子。
@@ -420,8 +420,8 @@ const SLIDES = [
 也要說明，6G 在台灣仍在政策研議階段，所以這是面向未來的構想。` },
 
 { id:'closing', label:'結語', sky:'day', title:'科技走進家，<br>人仍是<em>主角</em>',
-  dek:'連線讓住宅更聰明；但好的智慧住宅，要讓人看得懂、管得到、關得掉。',
-  facts:['<b>連線：</b>5G 已普及；6G（IMT-2030）仍在標準發展，衛星將補上覆蓋缺口','<b>系統：</b>感知 → 判斷 → 控制 → 回饋，每一環都保留手動與替代方案','<b>治理：</b>資料最小化、在地優先；公共服務只用依法授權的必要資料'],
+  dek:'看得懂、管得到、關得掉',
+  facts:['<b>連線：</b>5G 普及，6G 整合衛星','<b>系統：</b>感知 → 判斷 → 控制 → 回饋','<b>治理：</b>最小化、在地優先'],
   chips:['謝謝聆聽','Q & A'],
   steps:[{layout:'left',parts:['dek','facts','chips']}],
   notes:`最後做個總結。

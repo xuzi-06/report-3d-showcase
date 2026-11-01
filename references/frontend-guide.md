@@ -35,8 +35,8 @@ loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader
 { id:'meter', label:'智慧電表',          // id 對應 shotFor / flows；label 顯示在進度軌
   sky:'day' | 'high',                    // 背景天空
   title:'智慧電表<br>讀懂家的<em>用電</em>',  // <br> 分行逐行升起；<em> 為強調色
-  dek:'一段說明',                         // 資訊卡主文
-  facts:['<b>重點：</b>…', …],           // 編號條列
+  dek:'一行結論或關鍵詞',                 // 約 20 字內；完整敘述放 notes
+  facts:['<b>小標：</b>關鍵詞', …],       // 最多 4 條，不寫完整句子
   chips:['標籤', …],
   diagram:{type:'flow'|'cols', items:[…]},// flow: {k,h,p}；cols: {k,cls:'now'|'warn',h,li:[]}
   steps:[{layout:'left',parts:['dek']},{layout:'left',parts:['dek','facts']}],
