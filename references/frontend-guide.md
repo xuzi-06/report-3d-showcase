@@ -89,10 +89,11 @@ loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader
 
 - **後製只留水墨 pass**：`RenderPass` → `OutputPass` → 自訂 `ShaderPass`（Sobel 描邊加噪聲當筆觸、去飽和、偏暖、宣紙纖維紋理、淡暗角），不用光暈。`res` uniform 要用 `renderer.getDrawingBufferSize()`，resize 時更新。
 - **雲霧是點綴**：霧要淡（`FogExp2` 約 .003–.0065），飽和度 .6 以上，主體才清楚；另外放幾條棕灰雲帶（`Sprite`＋canvas 柔邊貼圖），在中景慢慢飄，離鏡頭太近時淡掉。canvas 漸層不可碰到貼圖邊緣，否則雲帶會出現直線硬邊，還會被描邊放大。
-- **地面高度 `groundY(x,z)`**：角色走上石台、台基、橋面時抬高，`updateActor` 每幀把 `position.y` 插值到地面高度。判斷「是否已走到終點」只能比水平距離。
+- **地面高度 `groundY(x,z)`**：角色走上石台、台基、橋面時抬高，`updateActor` 每幀把 `position.y` 插值到地面高度。判斷「是否已走到終點」只能比水平距離。台階用 `stair()` 逐級升高，級數、深度要和建模腳本的 `stairs()` 一樣。
 - **路線行跡**：`TubeGeometry` 沿路線建好，用 `setDrawRange` 隨步驟逐段畫出。終點要停在建築外，不要穿進台基。
 - **童年→成年**：角色 spec 可帶 `size`，`a.size` 每幀插值。
-- 建模腳本 `assets/models/孔子生平.py` 示範不用 MCP 的做法：`blender --background --factory-startup --python 孔子生平.py`，以 three 座標規劃、`T(x,z)` 換成 Blender 座標，人物四肢為子物件、原點在關節。
+- 建模腳本 `assets/models/孔子生平.py` 示範不用 MCP 的做法：`blender --background --factory-startup --python 孔子生平.py`，以 three 座標規劃、`T(x,z)` 換成 Blender 座標，人物四肢為子物件、原點在關節。精度做法見 modeling-guide「精度」。
+- **環繞鏡頭**（`orbit:true`）會慢慢繞目標一整圈：整圈路徑上不可有樹冠、屋頂，否則鏡頭轉到那裡會鑽進物件。範例把該帶狀範圍內的松樹往外推。
 
 ## 動態物件
 

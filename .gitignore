@@ -1,3 +1,4 @@
 *.bak
 *.blend1
 dist/
+*.blend

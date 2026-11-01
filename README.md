@@ -78,13 +78,14 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 瀏覽器禁止 `file://` 頁面用 fetch 讀取本機檔案，所以這裡改用 `<script src>` 載入所有資源：
 - three.js 與用到的 addons 預先打包成 `vendor/three.bundle.min.js`，放在每個範本資料夾內，整個資料夾可直接帶到別台電腦（IIFE，掛在 `window.THREE`／`window.THREE_ADDONS`），不再透過 CDN 用 import 載入
 - GLB 轉成 base64 的 `.glb.js`，用 `<script src>` 載入後交給 `GLTFLoader.parseAsync` 解析
-- `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，四份範例打包後約 1.8～3.6MB
+- `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，四份範例打包後約 1.8～6.2MB
 
 ## 檔案結構
 
 ```
 report-3d-showcase/
 ├─ SKILL.md                    # Skill 主說明（Claude 讀這份）
+├─ LICENSE                     # MIT
 ├─ docs/                       # README 預覽圖
 ├─ assets/
 │  ├─ vendor/                  # three.js 打包入口（重新打包用）與授權
@@ -108,4 +109,4 @@ report-3d-showcase/
 
 ## 授權
 
-範例中的文案與模型屬於原報告作者（`example-ink` 的文案由 Claude 依《史記》《論語》等史料草擬，僅作示範）；範本程式碼可自由修改使用。各範例的 `vendor/three.bundle.min.js` 內含 [three.js](https://threejs.org/)（MIT，見 `assets/vendor/three.LICENSE.txt`）。
+範例中的文案與模型屬於原報告作者（`example-ink` 的文案由 Claude 依《史記》《論語》等史料草擬，僅作示範）；程式碼、範本與建模腳本以 [MIT 授權](LICENSE) 釋出。各範例的 `vendor/three.bundle.min.js` 內含 [three.js](https://threejs.org/)（MIT，見 `assets/vendor/three.LICENSE.txt`）。
