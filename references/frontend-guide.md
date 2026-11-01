@@ -34,7 +34,6 @@ loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader
 ```js
 { id:'meter', label:'智慧電表',          // id 對應 shotFor / flows；label 顯示在進度軌
   sky:'day' | 'high',                    // 背景天空
-  eyebrow:'POWER & DATA · 1F',
   title:'智慧電表<br>讀懂家的<em>用電</em>',  // <br> 分行逐行升起；<em> 為強調色
   dek:'一段說明',                         // 資訊卡主文
   facts:['<b>重點：</b>…', …],           // 編號條列

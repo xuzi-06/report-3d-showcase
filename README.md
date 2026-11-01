@@ -78,7 +78,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 瀏覽器禁止 `file://` 頁面用 fetch 讀取本機檔案，所以這裡改用 `<script src>` 載入所有資源：
 - three.js 與用到的 addons 預先打包成 `vendor/three.bundle.min.js`，放在每個範本資料夾內，整個資料夾可直接帶到別台電腦（IIFE，掛在 `window.THREE`／`window.THREE_ADDONS`），不再透過 CDN 用 import 載入
 - GLB 轉成 base64 的 `.glb.js`，用 `<script src>` 載入後交給 `GLTFLoader.parseAsync` 解析
-- `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，四份範例打包後約 1.8～6.2MB
+- `build.ps1` 再把所有 `<script src>` 內嵌進同一個 HTML，四份範例打包後約 2.8～6.2MB
 
 ## 檔案結構
 
@@ -90,7 +90,7 @@ report-3d-showcase/
 ├─ assets/
 │  ├─ vendor/                  # three.js 打包入口（重新打包用）與授權
 │  ├─ 文案範本.md               # 給使用者填寫的文案格式
-│  ├─ example/                 # 淺色生活風範例（每個範例資料夾都含 main.html、vendor/three.bundle.min.js、assets/models/）
+│  ├─ example/                 # 淺色生活風範例（每個範例資料夾都含 main.html、vendor/three.bundle.min.js、assets/models/：GLB、建模腳本 .py、src/ 原始模型）
 │  ├─ example-dark/            # 夜景霓虹風範例
 │  ├─ example-story/           # 灰暗→明亮敘事風範例（角色動畫）
 │  └─ example-ink/             # 水墨古風敘事範例（含 Blender 背景模式建模腳本）

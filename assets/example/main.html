@@ -41,18 +41,6 @@ body[data-sky="high"] .sky.high{opacity:1}
 .load-error.show{display:block}
 
 /* ---------- 頂部列 ---------- */
-.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
-.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
-.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);animation:pulse 2.4s ease-in-out infinite}
-.tools{display:flex;gap:8px;pointer-events:auto}
-.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,252,.72);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
-.tool:hover{background:#fff;border-color:rgba(44,122,109,.4)}
-.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
-.tool[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
-.tool[aria-pressed="true"] kbd{background:rgba(255,255,255,.2)}
-.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
-.counter b{font-weight:500;color:var(--ink)}
-.counter span{color:var(--muted)}
 
 /* ---------- 資訊卡 ---------- */
 .card{
@@ -77,8 +65,6 @@ body[data-sky="high"] .sky.high{opacity:1}
 .card[data-layout="bottom"] .dek{font-size:14px}
 .card[data-layout="bottom"] .facts{display:none}
 
-.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
-.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .title{font-size:clamp(34px,4vw,60px);line-height:1.12;letter-spacing:-.045em;font-weight:900;margin:16px 0 14px}
 .card[data-layout="hero"] .title{font-size:clamp(48px,6.4vw,96px);margin:20px 0 18px}
 .title em{font-style:normal;color:var(--accent);background:linear-gradient(transparent 68%,var(--accent-soft) 68%,var(--accent-soft) 92%,transparent 92%);padding:0 .04em}
@@ -91,8 +77,6 @@ body[data-sky="high"] .sky.high{opacity:1}
 .facts li{counter-increment:f;display:grid;grid-template-columns:30px 1fr;gap:8px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.75;color:#3d423e}
 .facts li::before{content:counter(f,decimal-leading-zero);font:11px var(--mono);color:var(--accent);padding-top:3px}
 .facts b{color:var(--ink)}
-.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
-.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
 .sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.5}
 .sources::before{content:"參考資料";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
 .sources a{text-decoration:none;border-bottom:1px solid rgba(44,122,109,.35)}
@@ -178,7 +162,6 @@ body[data-sky="high"] .sky.high{opacity:1}
   .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
   .card[data-layout="bottom"] .card-grid{grid-template-columns:1fr;gap:12px}
   .flowrow,.cols{grid-template-columns:1fr 1fr}
-  .tool .lbl{display:none}
   .seg span{display:none}
   .navbtns{display:none}
 }
@@ -195,15 +178,6 @@ html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!i
 <svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
 <div class="tag" aria-hidden="true"></div>
 <div id="hotspots"></div>
-
-<header class="topbar">
-  <div class="brand"><i></i>ICT × LIVING</div>
-  <div class="tools">
-    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">13</span></span></div>
-    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
-    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
-  </div>
-</header>
 
 <article class="card" data-layout="hero" aria-live="polite"></article>
 
@@ -227,10 +201,9 @@ const {GLTFLoader,RoomEnvironment}=window.THREE_ADDONS;
    steps：每按一次「下一步」進入下一個 step；layout 改變時資訊卡會移動
    ===================================================================== */
 const SLIDES = [
-{ id:'cover', label:'開場', sky:'high', eyebrow:'ICT × LIVING · 2026',
-  title:'資通訊科技<br>與<em>住</em>',
+{ id:'cover', label:'開場', sky:'high', title:'資通訊科技<br>與<em>住</em>',
   dek:'從天上的通訊衛星，到家門口的一枚指紋——看資通訊科技如何走進住宅，又如何讓住宅資料在合法、受保護的前提下，支援公共服務。',
-  chips:['5G / 6G','智慧住宅','能源管理','資料治理'], hint:true,
+  chips:['5G / 6G','智慧住宅','能源管理','資料治理'],
   steps:[{layout:'hero',parts:['dek','chips']}],
   notes:`各位老師、同學好，我們這組報告的主題是「資通訊科技與住」。
 
@@ -242,8 +215,7 @@ const SLIDES = [
 
 那我們就從天空開始。` },
 
-{ id:'network', label:'5G→6G', sky:'high', eyebrow:'CONNECTIVITY',
-  title:'連線，<br>從<em>天空</em>開始',
+{ id:'network', label:'5G→6G', sky:'high', title:'連線，<br>從<em>天空</em>開始',
   dek:'住宅對外的連線，正從光纖、行動網路延伸到衛星。5G 已廣泛商轉；6G 以 ITU 的 IMT-2030 為框架，目標之一是把地面與非地面（衛星）網路整合起來。',
   diagram:{type:'cols',items:[
     {k:'NOW · 5G',cls:'now',h:'已在使用',li:['高速率、低延遲、大量連結','家用寬頻、行動上網、物聯網','依賴地面基地台覆蓋']},
@@ -261,8 +233,7 @@ const SLIDES = [
 
 不過，對外的連線再快，家裡面還是需要一套系統把設備串起來。接下來，我們就降落到這棟房子。` },
 
-{ id:'system', label:'系統總覽', sky:'day', eyebrow:'SMART HOME SYSTEM',
-  title:'一棟會<br><em>回應</em>的房子',
+{ id:'system', label:'系統總覽', sky:'day', title:'一棟會<br><em>回應</em>的房子',
   dek:'這棟三層住宅放進了七個關鍵設備。它們各自分工，經由家庭網路協作——點選畫面上的標籤可以直接跳到該設備。',
   facts:['<b>一樓・玄關與電力：</b>生物識別門鎖、智慧開關、智慧電表、家庭閘道器','<b>二樓・客廳：</b>空氣品質感測器，連動空調','<b>三樓・書房：</b>家庭邊緣運算主機、儲能電池；<b>屋頂：</b>太陽能板','<b>實際案例：</b>台達在台灣的智慧建築案例，如新竹元太廠、台北瑞光總部、竹北普生竹創，用途與認證各不相同'],
   diagram:{type:'flow',items:[
@@ -285,7 +256,7 @@ const SLIDES = [
 
 接下來，從大門口開始。` },
 
-{ id:'lock', label:'門鎖', sky:'day', eyebrow:'ACCESS · 1F', focus:'生物識別門鎖', tagText:'一樓・生物識別門鎖',
+{ id:'lock', label:'門鎖', sky:'day', focus:'生物識別門鎖', tagText:'一樓・生物識別門鎖',
   title:'生物識別<br><em>智慧門鎖</em>',
   dek:'用指紋確認「你是你」，再驅動實體鎖舌。方便之外，更要想清楚：辨識失敗、沒電、資料外洩時怎麼辦？',
   facts:['<b>運作：</b>讀取指紋特徵 → 與登錄樣板比對 → 比對通過才解鎖','<b>權限：</b>家人、訪客、臨時密碼可分級設定，並留下進出紀錄','<b>備援：</b>保留實體鑰匙或密碼；生物特徵資料宜加密保存在鎖內，不上傳雲端'],
@@ -303,7 +274,7 @@ const SLIDES = [
 
 第三是生物資料的保護。指紋和密碼最大的不同，是密碼外洩可以更換，指紋外洩卻無法挽回。所以比較好的做法，是把指紋資料加密保存在鎖本身，而不是上傳到雲端。` },
 
-{ id:'switch', label:'智慧開關', sky:'day', eyebrow:'MANUAL CONTROL · 1F', focus:'智慧開關', tagText:'一樓・智慧開關',
+{ id:'switch', label:'智慧開關', sky:'day', focus:'智慧開關', tagText:'一樓・智慧開關',
   title:'智慧開關<br>讓控制<em>留在手邊</em>',
   dek:'按下去就亮——這是最直覺的介面。智慧開關保留了這個習慣，再加上排程與情境自動化。',
   facts:['<b>情境：</b>回家自動開玄關燈、離家一鍵全關、夜間只開低亮度','<b>相容：</b>開關、燈具與閘道器要支援相同協定（例如 Matter）才能互通','<b>原則：</b>斷網或系統故障時，仍要能當作一般開關使用'],
@@ -319,7 +290,7 @@ const SLIDES = [
 
 最後一個原則很重要：就算斷網或系統故障，它也必須能當成一般開關使用。智慧化不應該讓最基本的功能變得更脆弱。` },
 
-{ id:'meter', label:'智慧電表', sky:'day', eyebrow:'POWER & DATA · 1F', focus:'一樓｜智慧電表', floor:'1F', tagText:'一樓・智慧電表',
+{ id:'meter', label:'智慧電表', sky:'day', focus:'一樓｜智慧電表', floor:'1F', tagText:'一樓・智慧電表',
   title:'智慧電表<br>讀懂家的<em>用電</em>',
   dek:'智慧電表（AMI，先進讀表基礎建設）能定時回傳用電資料，讓用電從「每兩個月一張帳單」變成「看得見的曲線」。',
   facts:['<b>可觀察：</b>分時段的用電量（常見為每 15 分鐘一筆，依電業設定）','<b>可應用：</b>時間電價、異常用電提醒、節能建議','<b>隱私：</b>用電曲線能推測作息（幾點起床、何時出門），分享須經同意並限縮用途'],
@@ -333,7 +304,7 @@ const SLIDES = [
 
 但我們也要注意：一條用電曲線，其實能看出這個家幾點起床、什麼時候出門、晚上幾點睡。所以用電資料雖然不是照片，一樣屬於敏感資料，分享之前要經過同意，用途也要限縮。` },
 
-{ id:'gateway', label:'閘道器', sky:'day', eyebrow:'HOME NETWORK · 1F', focus:'一樓｜家庭閘道器', floor:'1F', tagText:'一樓・家庭閘道器',
+{ id:'gateway', label:'閘道器', sky:'day', focus:'一樓｜家庭閘道器', floor:'1F', tagText:'一樓・家庭閘道器',
   title:'家庭閘道器<br>串起<em>所有設備</em>',
   dek:'門鎖、開關、感測器各說各的「無線語言」。閘道器負責翻譯與轉送，也守住家與網際網路之間的那道門。',
   facts:['<b>匯接：</b>Wi-Fi、Thread、Zigbee 等不同協定在這裡交會','<b>安全：</b>更改預設密碼、定期更新韌體、訪客與設備網路分開','<b>分工：</b>家中自動化在本地執行；遠端控制才經過雲端'],
@@ -347,7 +318,7 @@ const SLIDES = [
 
 還有一個架構上的選擇：家裡的自動化盡量在本地執行，只有在外面用手機遠端控制時，才經過雲端。這樣反應比較快，斷網的時候也不會整個停擺。` },
 
-{ id:'sensor', label:'環境感測', sky:'day', eyebrow:'ENVIRONMENT · 2F', focus:'二樓｜空氣品質感測器', floor:'2F', tagText:'二樓・空氣品質感測器',
+{ id:'sensor', label:'環境感測', sky:'day', focus:'二樓｜空氣品質感測器', floor:'2F', tagText:'二樓・空氣品質感測器',
   title:'環境感測<br>讓空間<em>有回應</em>',
   dek:'客廳牆上的空氣品質感測器，持續量測二氧化碳、PM2.5 與溫濕度，作為提醒與自動化的條件。',
   facts:['<b>量測：</b>CO₂、PM2.5、溫度、濕度（項目依設備而異）','<b>限制：</b>讀值受安裝位置、校正與設備誤差影響','<b>原則：</b>保留人工確認與手動控制，不讓單一讀值決定一切'],
@@ -368,7 +339,7 @@ const SLIDES = [
 
 週末一家人在客廳聊天，二氧化碳慢慢上升，這是感知；系統判斷超過設定值，參考台灣的室內空氣品質標準，二氧化碳的 8 小時值是 1,000 ppm，這是判斷；接著自動開啟換氣或空調送風，這是控制；最後顯示環變色、手機收到通知，住戶如果覺得不需要，可以直接取消，這是回饋。` },
 
-{ id:'edge', label:'邊緣運算', sky:'day', eyebrow:'LOCAL COMPUTING · 3F', focus:'三樓｜家庭邊緣運算主機', floor:'3F', tagText:'三樓・家庭邊緣運算主機',
+{ id:'edge', label:'邊緣運算', sky:'day', focus:'三樓｜家庭邊緣運算主機', floor:'3F', tagText:'三樓・家庭邊緣運算主機',
   title:'家庭邊緣運算<br>在家<em>先處理</em>',
   dek:'書房角落的小型主機，在家中就近處理自動化規則、影像辨識與資料彙整，而不是什麼都送上雲端。',
   facts:['<b>好處：</b>反應快、斷網仍能運作、敏感資料不必離開家','<b>取捨：</b>需要更新、備份與權限管理，硬體也有使用壽命','<b>關鍵問題：</b>哪些資料留在家？哪些服務才真的需要連外？'],
@@ -382,7 +353,7 @@ const SLIDES = [
 
 但它也有代價：主機需要有人更新、備份、管理權限，硬體也會老化。所以真正要討論的問題是：哪些資料應該留在家，哪些服務才真的需要連外？這個問題，我們等一下談隱私時會再回來。` },
 
-{ id:'solar', label:'屋頂能源', sky:'day', eyebrow:'ENERGY LOOP · ROOF', focus:'屋頂｜太陽能板', tagText:'屋頂・太陽能板',
+{ id:'solar', label:'屋頂能源', sky:'day', focus:'屋頂｜太陽能板', tagText:'屋頂・太陽能板',
   title:'屋頂能源<br>接上住宅<em>管理</em>',
   dek:'屋頂的八片太陽能板、三樓的儲能電池、一樓的智慧電表，組成一個看得見的能源迴圈。',
   facts:['<b>發電：</b>受日照、方位、遮蔭與天候影響，不是固定值','<b>調度：</b>白天先自用、多餘的儲存，晚上再放電使用','<b>回饋：</b>把發電與用電放在同一張圖上，住戶才能做出選擇'],
@@ -402,8 +373,7 @@ const SLIDES = [
 
 節能最後還是要靠人的選擇，系統的角色，是讓好的選擇變得容易。` },
 
-{ id:'privacy', label:'資料邊界', sky:'day', eyebrow:'DATA BOUNDARY',
-  title:'隱私，從資料<br>進出家的<em>邊界</em>開始',
+{ id:'privacy', label:'資料邊界', sky:'day', title:'隱私，從資料<br>進出家的<em>邊界</em>開始',
   dek:'智慧住宅每天產生大量資料。真正的問題不是「有沒有資料」，而是：哪些留在家、哪些可以出門、誰有權看？',
   diagram:{type:'cols',items:[
     {k:'STAY HOME',cls:'now',h:'留在家中處理',li:['門鎖指紋樣板、進出紀錄','室內影像、即時感測讀值','自動化規則與在地運算']},
@@ -424,8 +394,7 @@ const SLIDES = [
 
 我們再來看最後一個應用：公共服務。` },
 
-{ id:'land', label:'地政服務', sky:'high', eyebrow:'IMT-2030 × LAND SERVICES',
-  title:'建築資料<br>助力<em>地政服務</em>',
+{ id:'land', label:'地政服務', sky:'high', title:'建築資料<br>助力<em>地政服務</em>',
   dek:'延伸建築資料的應用，思考如何改善地政的收件、查核與交接。這是改革構想：資料須依法取得、妥善保護，並由人員做最後決定。',
   diagram:{type:'flow',items:[
     {k:'01 INTAKE',h:'收件與交接',p:'標準欄位自動檢核附件、分派案件；狀態與待辦隨案交接'},
@@ -450,8 +419,7 @@ const SLIDES = [
 
 也要說明，6G 在台灣仍在政策研議階段，所以這是面向未來的構想。` },
 
-{ id:'closing', label:'結語', sky:'day', eyebrow:'CONCLUSION',
-  title:'科技走進家，<br>人仍是<em>主角</em>',
+{ id:'closing', label:'結語', sky:'day', title:'科技走進家，<br>人仍是<em>主角</em>',
   dek:'連線讓住宅更聰明；但好的智慧住宅，要讓人看得懂、管得到、關得掉。',
   facts:['<b>連線：</b>5G 已普及；6G（IMT-2030）仍在標準發展，衛星將補上覆蓋缺口','<b>系統：</b>感知 → 判斷 → 控制 → 回饋，每一環都保留手動與替代方案','<b>治理：</b>資料最小化、在地優先；公共服務只用依法授權的必要資料'],
   chips:['謝謝聆聽','Q & A'],
@@ -476,12 +444,11 @@ const SLIDES = [
    ===================================================================== */
 const $=s=>document.querySelector(s);
 const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag'), hotLayer=$('#hotspots');
-const notes=$('.notes'), notesBtn=$('#notesBtn');
+const notes=$('.notes');
 const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
 const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isNarrow=()=>innerWidth<=820;
 let slideIdx=0, stepIdx=0, ready=false;
-$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
 
 /* 進度軌 */
 const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
@@ -497,14 +464,13 @@ function diagramHTML(d){
 }
 function renderCard(s){
   const n=SLIDES.indexOf(s)+1;
-  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const head=`<h2 class="title">${titleHTML(s.title)}</h2>`;
   const dek=`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`;
   const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
   const facts=s.facts?`<ul class="facts part" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
   const diagram=s.diagram?`<div class="diagram part" data-part="diagram">${diagramHTML(s.diagram)}</div>`:'';
-  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
   const sources=s.sources?`<div class="sources anim" style="--i:7">${s.sources.map(([l,u])=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${l}</a>`).join('')}</div>`:'';
-  card.innerHTML=`<div class="card-grid"><div>${head}${dek}${chips}</div><div>${diagram}</div></div>${facts}${hint}${sources}`;
+  card.innerHTML=`<div class="card-grid"><div>${head}${dek}${chips}</div><div>${diagram}</div></div>${facts}${sources}`;
 }
 function applyStep(s,step,animateParts){
   const st=s.steps[step];
@@ -530,7 +496,6 @@ function go(i,step=0,instant=false){
     swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0},instant?0:420);
   }else applyStep(s,stepIdx,true);
   document.body.dataset.sky=s.sky;
-  $('#cur').textContent=String(i+1).padStart(2,'0');
   segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
   history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
   updateNotes();
@@ -549,9 +514,8 @@ function updateNotes(){
   const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
 }
 setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
-function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
-notesBtn.onclick=toggleNotes;
-$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+const toggleNotes=()=>notes.classList.toggle('open');
+const toggleFs=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
 $('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
 
 /* 鍵盤、滾輪、觸控 */
@@ -561,7 +525,7 @@ addEventListener('keydown',e=>{
   if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
   else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
   else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
-  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')toggleFs();
 });
 let wheelAcc=0,wheelLock=0;
 addEventListener('wheel',e=>{

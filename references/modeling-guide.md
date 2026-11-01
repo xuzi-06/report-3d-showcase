@@ -58,6 +58,16 @@ glTF 匯出會把 Blender 的 z-up 轉成 three.js 的 y-up：**Blender (x, y, z
 - 台階要和前端 `groundY()` 一致（逐級升高），否則人物會浮在台階上或陷進去，穿模檢查也會誤報。
 - 精度提高後檔案會變大：遠山網格 32×32 左右就夠，瓦壟間距 15cm，GLB 仍要在 5MB 內。
 
+## 修改既有 GLB（提高精度、補細部）
+
+已經有模型時，用 Blender 匯入 GLB 再改，比重建快，也不會動到前端依賴的名稱與位置。範例：`assets/example/assets/models/智慧住宅.py`、`通訊衛星.py`、`assets/example-dark/assets/models/未來城市.py`、`assets/example-story/assets/models/斷在學校.py`。
+- 原始 GLB 放在 `assets/models/src/`（`build.ps1` 不會轉換子資料夾），腳本每次都從它讀入，可重複執行。
+- **換網格不換物件**：新幾何建好後，把網格資料換進原物件（`swap_mesh`），名稱、原點、父子關係、自訂屬性（`cutaway`）都保留；會動的物件（車、無人機、葉片）原點與方向不可變。
+- **補細部**：新零件併入原物件（`join_into`），或用新名稱掛在同一個父物件下。
+- 匯入的 GLB 每個面的頂點是分開的，要分出「一塊塊零件」（每扇窗、每段牆、每個植栽）前先 `remove_doubles`，否則每個面都會被當成一塊。
+- 用外框（bounding box）當高度前先確認：外框可能包含鐘塔、天線，屋頂高度要用主體那一塊。
+- 有角色走位的場景，新增的細部要避開走位路線（例如開放的教室正面不加勒腳、壁柱），改完跑 `?check`。
+
 ## 匯出
 
 ```python

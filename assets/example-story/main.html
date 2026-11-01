@@ -46,17 +46,6 @@ html[data-mood="bright"] .grain{opacity:.25}
 .load-error.show{display:block}
 
 /* ---------- 頂部列 ---------- */
-.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
-.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
-.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);animation:pulse 2.4s ease-in-out infinite}
-.tools{display:flex;gap:8px;pointer-events:auto}
-.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--glass);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
-.tool:hover{border-color:var(--accent);background:var(--accent-soft)}
-.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
-.tool[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
-.counter b{font-weight:500;color:var(--ink)}
-.counter span{color:var(--muted)}
 
 /* ---------- 資訊卡 ---------- */
 .card{
@@ -77,8 +66,6 @@ html[data-mood="bright"] .grain{opacity:.25}
 .card.leaving{opacity:0;filter:blur(8px)}
 .card::before{content:"";position:absolute;left:0;top:28px;width:3px;height:42px;border-radius:0 3px 3px 0;background:var(--accent)}
 
-.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
-.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .card{color:var(--ink)}
 .title{color:var(--ink);font:900 clamp(32px,3.6vw,54px)/1.16 var(--serif);letter-spacing:-.01em;margin:16px 0 14px}
 .card[data-layout="hero"] .title{font-size:clamp(56px,7.4vw,112px);margin:18px 0 14px}
@@ -95,8 +82,6 @@ html[data-mood="bright"] .grain{opacity:.25}
 .facts b{color:var(--ink)}
 .facts.plain li{grid-template-columns:1fr}
 .facts.plain li::before{display:none}
-.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
-.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
 .sources{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.6;color:var(--muted)}
 .sources::before{content:"資料來源";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
 .sources a{text-decoration:none;border-bottom:1px solid var(--accent-soft)}
@@ -180,7 +165,6 @@ html[data-mood="bright"] .grain{opacity:.25}
   .card,.card[data-layout]{--w:calc(100vw - 2 * var(--gutter));--l:var(--gutter);--t:calc(100svh - 70px);--ty:-100%;max-height:52svh;padding:20px}
   .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
   .stats{grid-template-columns:1fr 1fr}
-  .tool .lbl{display:none}
   .seg span{display:none}
   .navbtns{display:none}
 }
@@ -195,15 +179,6 @@ html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!i
 <div class="grain" aria-hidden="true"></div>
 <svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
 <div class="tag" aria-hidden="true"></div>
-
-<header class="topbar">
-  <div class="brand"><i></i>GUIDANCE · 斷在學校</div>
-  <div class="tools">
-    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">09</span></span></div>
-    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
-    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
-  </div>
-</header>
 
 <article class="card" data-layout="hero" aria-live="polite"></article>
 
@@ -229,10 +204,10 @@ const {GLTFLoader,RoomEnvironment,EffectComposer,RenderPass,UnrealBloomPass,Outp
    focus / tag：指引線指向的物件或角色（可寫在 step 內）
    ===================================================================== */
 const SLIDES = [
-{ id:'cover', label:'開場', eyebrow:'GUIDANCE · DROPOUT PREVENTION', mood:0,
+{ id:'cover', label:'開場', mood:0,
   title:'斷在<em>學校</em>',
   dek:'從輔導觀點看中途離校與輟學',
-  chips:['2026 年 10 月 27 日','@xuzhi'], hint:true,
+  chips:['2026 年 10 月 27 日','@xuzhi'],
   steps:[{layout:'hero',parts:['dek','chips']}],
   notes:`各位老師、同學好，我今天報告的主題是「斷在學校：從輔導觀點看中途離校與輟學」。
 
@@ -240,7 +215,7 @@ const SLIDES = [
 
 我想先請大家記住一個問題：一個孩子離開學校，到底是從哪裡開始斷掉的？又可以在哪裡把它接回來？` },
 
-{ id:'news', label:'小樂的故事', eyebrow:'一則新聞', mood:0,
+{ id:'news', label:'小樂的故事', mood:0,
   title:'小樂不是<br><em>突然不見</em>的',
   dek:'小樂的離校，從家裡開始，在學校長大，最後在街頭成形。（國教署表揚中輟輔導時所舉案例，聯合報 2015）',
   groups:[
@@ -276,7 +251,7 @@ const SLIDES = [
 
 身為輔導人員，我們要問的是：在小樂霸凌、頂撞的那段日子裡，有沒有人看見行為背後那個正在失去一切的孩子？如果有，故事能不能在學校就轉彎？` },
 
-{ id:'now', label:'現況', eyebrow:'現況 · 113 學年（2024–25）', mood:0,
+{ id:'now', label:'現況', mood:0,
   title:'回來的孩子，<br>有<em>一半</em>會再離開',
   dek:'把孩子找回來只是一半的工作，讓他「留下來」才是輔導真正的戰場。',
   stats:[{n:'2,104',u:'人',l:'國中小中輟人數（113 學年）；國中 1,694、國小 410'},
@@ -305,7 +280,7 @@ const SLIDES = [
 
 但從輔導的角度來看，「作息不正常」很少是孩子單獨造成的。它往往是家庭照顧功能鬆動之後，最先在學校顯現出來的症狀。` },
 
-{ id:'family', label:'家庭', eyebrow:'起點 · 家庭', mood:0, focus:'破舊房屋', tag:'孩子帶來上學的家',
+{ id:'family', label:'家庭', mood:0, focus:'破舊房屋', tag:'孩子帶來上學的家',
   title:'家庭是<em>起始</em>',
   dek:'孩子的書包裡，裝著一整個家。學校無法替孩子換一個家，但必須看懂孩子帶著什麼樣的家來上學。',
   facts:['<b>照顧缺位：</b>父母離異、失親、隔代教養或長期在外工作——早上沒人叫起床，晚上沒人問功課',
@@ -339,7 +314,7 @@ const SLIDES = [
 
 家庭給了起點，但起點不是終點。對很多孩子來說，學校裡那位穩定的大人，可能是他生命中第一個「不會離開」的人。` },
 
-{ id:'school', label:'學校', eyebrow:'發展 · 學校', mood:0, focus:'小樂', tag:'小樂',
+{ id:'school', label:'學校', mood:0, focus:'小樂', tag:'小樂',
   title:'學校是<em>發展</em>',
   dek:'讓問題「長大」的，常是一連串沒被接住的挫折；最關鍵的是孩子缺少成功經驗（許舜賢）。',
   groups:[
@@ -389,7 +364,7 @@ const SLIDES = [
 
 每一次曠課，都是孩子在投票：這裡沒有我的位置。學校的任務，就是在他投下最後一票之前，讓他找到位置。` },
 
-{ id:'society', label:'社會', eyebrow:'後果 · 社會', mood:0,
+{ id:'society', label:'社會', mood:0,
   title:'社會是<em>後果</em>',
   dek:'孩子一旦離開學校，就同時失去了每天有大人看著他的地方。後果往兩個方向發展。',
   groups:[
@@ -424,7 +399,7 @@ const SLIDES = [
 
 沒在學校被接住的孩子，會在社會的某個角落等著被接住，或者被利用。` },
 
-{ id:'defense', label:'五道防線', eyebrow:'在學校斷掉「發展」', mood:[.08,.3,.48,.64,.82,1],
+{ id:'defense', label:'五道防線', mood:[.08,.3,.48,.64,.82,1],
   title:'輔導的<br><em>五道防線</em>',
   dek:'斷點必須設在學校。家庭難以在短期內改變，社會後果的代價最高，而學校是唯一每天都看得見孩子的地方。',
   groups:[
@@ -488,7 +463,7 @@ const SLIDES = [
 
 大家看，小樂回到了教室，坐回自己的位子上，整個學校也亮起來了。` },
 
-{ id:'closing', label:'結語', eyebrow:'結語', mood:1,
+{ id:'closing', label:'結語', mood:1,
   title:'在孩子<br><em>決定離開</em>之前',
   dek:'我們改變不了孩子出生的家，也很難在他離校後追回失去的時間，但我們每天都在學校見到他。小樂最後被一所中介學園接住；我們希望下一個小樂，在原本的教室裡就被接住。',
   quote:'輔導不是要把每個孩子都留在同一條路上，而是確保沒有一個孩子在無人察覺的情況下，獨自走出校門。',
@@ -518,7 +493,7 @@ const SLIDES = [
 
 在學校斷掉發展，就是在社會少一個遺憾。` },
 
-{ id:'sources', label:'資料來源', eyebrow:'REFERENCES', mood:1,
+{ id:'sources', label:'資料來源', mood:1,
   title:'資料<em>來源</em>',
   facts:['聯合報〈10年少一半 國中小中輟生創新低〉，2015（萬華國中新聞剪輯）','教育部國民中小學中輟統計（衛福部兒少統計專區）','姊妹淘〈台灣高中職離校潮飆升〉，2025','鄭崇趁〈中輟學生的輔導與中介教育方案〉，法務部犯罪防治研究資源網','監察院〈國中(小)中輟生〉調查報告','臺中市主計處〈高中學生中途離校統計〉，2023','許舜賢〈青少年中途輟學相關因素之探討〉','公視新聞〈飛夢林學園〉報導','國立基隆高中中途離校學生預防追蹤及復學輔導實施計畫，2026'],
   chips:['謝謝聆聽','Q & A'],
@@ -533,12 +508,11 @@ const SLIDES = [
    ===================================================================== */
 const $=s=>document.querySelector(s);
 const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag');
-const notes=$('.notes'), notesBtn=$('#notesBtn');
+const notes=$('.notes');
 const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
 const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isNarrow=()=>innerWidth<=820;
 let slideIdx=0, stepIdx=0, ready=false;
-$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
 
 const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
 
@@ -553,16 +527,15 @@ function groupHTML(g,i){
 }
 function renderCard(s){
   const n=SLIDES.indexOf(s)+1;
-  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const head=`<h2 class="title">${titleHTML(s.title)}</h2>`;
   const dek=s.dek?`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`:'';
   const stats=s.stats?`<div class="stats part" data-part="stats">${s.stats.map((x,i)=>`<div class="stat anim ${x.warn?'warn':''}" style="--i:${i+3}"><b data-n="${x.n}">${x.n}</b><small>${x.u}</small><span>${x.l}</span></div>`).join('')}</div>`:'';
   const groups=(s.groups||[]).map(groupHTML).join('');
   const facts=s.facts?`<ul class="facts part ${s.id==='closing'||s.id==='sources'?'plain':''}" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
   const quote=s.quote?`<blockquote class="quote part anim" data-part="quote" style="--i:3">${s.quote}</blockquote>`:'';
   const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
-  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
   const sources=s.sources?`<div class="sources anim" style="--i:8">${s.sources.map(x=>Array.isArray(x)?`<a href="${x[1]}" target="_blank" rel="noopener noreferrer">${x[0]}</a>`:`<span>${x}</span>`).join('')}</div>`:'';
-  card.innerHTML=`${head}${dek}${stats}${groups}${facts}${quote}${chips}${hint}${sources}`;
+  card.innerHTML=`${head}${dek}${stats}${groups}${facts}${quote}${chips}${sources}`;
 }
 /* 大數字從 0 數上來 */
 function countUp(root){
@@ -596,7 +569,6 @@ function go(i,step=0,instant=false){
     clearTimeout(swapTimer);
     swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0;if(!card.querySelector('.stats')?.hidden)countUp(card)},instant?0:420);
   }else applyStep(s,stepIdx,true);
-  $('#cur').textContent=String(i+1).padStart(2,'0');
   segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
   history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
   updateNotes();
@@ -615,9 +587,8 @@ function updateNotes(){
   const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
 }
 setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
-function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
-notesBtn.onclick=toggleNotes;
-$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+const toggleNotes=()=>notes.classList.toggle('open');
+const toggleFs=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
 $('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
 
 /* 鍵盤、滾輪、觸控 */
@@ -627,7 +598,7 @@ addEventListener('keydown',e=>{
   if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
   else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
   else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
-  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')toggleFs();
 });
 let wheelAcc=0,wheelLock=0;
 addEventListener('wheel',e=>{

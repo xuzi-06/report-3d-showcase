@@ -43,6 +43,7 @@ description: 把使用者提供的報告文案／講稿／大綱，做成一套�
 - 成功 → 步驟 2。
 - 有工具但連不上 → 通常是 Blender 沒開，直接幫忙啟動。
 - 沒有工具 → 依 `references/blender-mcp-setup.md` 安裝（uv、`claude mcp add`、Blender 外掛、按 Connect）。安裝會改動使用者環境，先說明並取得同意；新註冊的 MCP 要重啟 Claude Code 才生效，明確告訴使用者重啟後說「繼續」。
+- 已經有 GLB、只想提高精度：不必從頭建，用 Blender 匯入 GLB，保留物件名稱、原點與階層，只替換網格或補細部後再匯出（做法見 modeling-guide「修改既有 GLB」）。
 - 沒有 MCP 但電腦裝了 Blender（也可能在 Steam 資料夾，查登錄檔的解除安裝清單）→ 可以不安裝任何東西，把建模寫成 Python 腳本，用 `blender --background --factory-startup --python <腳本>` 建模並匯出 GLB，再用截圖檢查成品。腳本存在 `<專案>/assets/models/`，方便之後修改。
 
 ### 2. 建構 3D 模型
@@ -55,6 +56,8 @@ description: 把使用者提供的報告文案／講稿／大綱，做成一套�
 - `SLIDES`：**整個陣列換成使用者文案**（標題→`title`、說明→`dek`、條列→`facts`、圖解→`diagram`、分幾步→`steps`、參考資料→`sources`、講稿→`notes`），不保留範本任何一頁文字
 - `loadGLB` 的模型名稱、`shotFor()` 每頁鏡位，以及範本有的 `DEVICES`（可點標籤）、`buildFlows()`（資料流）、`planFor()`（角色走位）
 - `:root` 配色；刪除與主題無關的範本專屬特效
+
+資訊卡要精簡，這是「簡」報：畫面上只留標題、說明、條列／圖解與資料來源，不加頁碼、頂部品牌列、標題上方的小標、「按 → 開始」之類的操作提示。講稿（N）與全螢幕（F）只用快捷鍵，不放按鈕。
 
 保留既有的動畫系統（卡片漸顯與移位、標題逐行升起、鏡頭弧線飛行，以及範本的流光資料流或角色走位）——這是「藝術感」的來源，不要退化成靜態頁。
 

@@ -40,17 +40,6 @@ a{color:var(--accent)}
 .load-error.show{display:block}
 
 /* ---------- 頂部列 ---------- */
-.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
-.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
-.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);animation:pulse 2.4s ease-in-out infinite}
-.tools{display:flex;gap:8px;pointer-events:auto}
-.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--glass);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
-.tool:hover{border-color:var(--accent);background:var(--accent-soft)}
-.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
-.tool[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
-.counter b{font-weight:500;color:var(--ink)}
-.counter span{color:var(--muted)}
 
 /* ---------- 資訊卡 ---------- */
 .card{
@@ -71,8 +60,6 @@ a{color:var(--accent)}
 .card.leaving{opacity:0;filter:blur(8px)}
 .card::before{content:"";position:absolute;left:0;top:28px;width:4px;height:46px;background:var(--accent);opacity:.85}
 
-.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
-.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .card{color:var(--ink)}
 .title{color:var(--ink);font:900 clamp(32px,3.6vw,54px)/1.16 var(--serif);letter-spacing:-.01em;margin:16px 0 14px}
 .card[data-layout="hero"] .title{font-size:clamp(56px,7.4vw,112px);margin:18px 0 14px}
@@ -89,8 +76,6 @@ a{color:var(--accent)}
 .facts b{color:var(--ink)}
 .facts.plain li{grid-template-columns:1fr}
 .facts.plain li::before{display:none}
-.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
-.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
 .sources{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.6;color:var(--muted)}
 .sources::before{content:"資料來源";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
 .sources a{text-decoration:none;border-bottom:1px solid var(--accent-soft)}
@@ -174,7 +159,6 @@ a{color:var(--accent)}
   .card,.card[data-layout]{--w:calc(100vw - 2 * var(--gutter));--l:var(--gutter);--t:calc(100svh - 70px);--ty:-100%;max-height:52svh;padding:20px}
   .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
   .stats{grid-template-columns:1fr 1fr}
-  .tool .lbl{display:none}
   .seg span{display:none}
   .navbtns{display:none}
 }
@@ -189,15 +173,6 @@ html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!i
 <div class="grain" aria-hidden="true"></div>
 <svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
 <div class="tag" aria-hidden="true"></div>
-
-<header class="topbar">
-  <div class="brand"><i></i>CONFUCIUS · 孔子生平</div>
-  <div class="tools">
-    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">10</span></span></div>
-    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
-    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
-  </div>
-</header>
 
 <article class="card" data-layout="hero" aria-live="polite"></article>
 
@@ -223,10 +198,10 @@ const {GLTFLoader,RoomEnvironment,EffectComposer,RenderPass,OutputPass,ShaderPas
    focus / tag：指引線指向的物件或角色（可寫在 step 內）
    ===================================================================== */
 const SLIDES = [
-{ id:'cover', label:'開場', eyebrow:'CONFUCIUS · 551–479 BCE', mood:.15,
+{ id:'cover', label:'開場', mood:.15,
   title:'孔子<em>生平</em>',
   dek:'一位老師的七十三年',
-  chips:['春秋・魯國','範例文案'], hint:true,
+  chips:['春秋・魯國','範例文案'],
   steps:[{layout:'hero',parts:['dek','chips']}],
   notes:`大家好，今天要介紹的是孔子的一生。
 
@@ -234,7 +209,7 @@ const SLIDES = [
 
 接下來，我們跟著他從魯國陬邑的一間茅草屋出發，走完這七十三年。` },
 
-{ id:'birth', label:'少也賤', eyebrow:'出身 · 魯國陬邑', mood:[0,.05,.05],
+{ id:'birth', label:'少也賤', mood:[0,.05,.05],
   title:'吾少也<em>賤</em>',
   dek:'孔子名丘，字仲尼，前 551 年生於魯國陬邑（今山東曲阜一帶）。父親叔梁紇在他年幼時過世，由母親顏氏撫養長大，家境清寒。',
   facts:['<b>委吏：</b>年輕時管過倉庫，他說「會計當而已矣」——帳目算對就好',
@@ -256,7 +231,7 @@ const SLIDES = [
 
 後來他回想這段日子，說了一句話：「吾少也賤，故多能鄙事。」我小時候地位低微，所以學會了很多粗活。這句話很誠實，也說明了他一生的起點。` },
 
-{ id:'study', label:'志于學', eyebrow:'求學 · 十有五而志于學', mood:[.1,.15,.2],
+{ id:'study', label:'志于學', mood:[.1,.15,.2],
   title:'十有五<br>而<em>志于學</em>',
   dek:'孔子沒有固定的老師，也沒有出身名門。他從十五歲立定志向，哪裡有懂的人，就向誰學。',
   facts:['<b>問禮：</b>相傳曾到周朝都城向老子請教禮制（《史記》記載）',
@@ -279,7 +254,7 @@ const SLIDES = [
 
 所以他說：「三人行，必有我師焉。」看到別人的優點就學，看到缺點就拿來反省自己。` },
 
-{ id:'teach', label:'杏壇設教', eyebrow:'教育 · 有教無類', mood:[.35,.45,.5],
+{ id:'teach', label:'杏壇設教', mood:[.35,.45,.5],
   title:'杏壇<br><em>有教無類</em>',
   dek:'大約三十歲前後，孔子開始收學生、私人講學。在「學在官府」的時代，他把教育帶出了貴族的圍牆。',
   stats:[{n:'3,000',u:'人',l:'相傳弟子總數（《史記》：「弟子蓋三千焉」）'},
@@ -306,7 +281,7 @@ const SLIDES = [
 
 因為子路太衝動，要拉他一下；冉有太退縮，要推他一把。後人把這叫做「因材施教」。` },
 
-{ id:'office', label:'仕魯', eyebrow:'從政 · 魯定公時期', mood:[.6,.7,.55],
+{ id:'office', label:'仕魯', mood:[.6,.7,.55],
   title:'從中都宰<br>到<em>大司寇</em>',
   dek:'約五十一歲，孔子出任中都宰，治理一年，四方都來仿效。之後升任司空、大司寇，是他一生最接近實現理想的時候。',
   groups:[{k:'前 500 · 夾谷之會',h:'以禮相爭，收回失地',p:'孔子陪魯定公與齊景公會盟。面對齊國的威嚇，他依禮據理力爭，齊國最後歸還了先前侵占的魯國土地。'},
@@ -327,7 +302,7 @@ const SLIDES = [
 
 但魯國真正的權力，掌握在季孫、叔孫、孟孫三家手上，史稱「三桓」。孔子主張拆掉三家私邑的城牆，史稱「墮三都」。拆了兩座，第三座失敗，改革半途而廢，他和權臣之間也有了裂痕。` },
 
-{ id:'wander', label:'周遊列國', eyebrow:'周遊列國 · 十四年', mood:[.3,.15,.25,.2,.05],
+{ id:'wander', label:'周遊列國', mood:[.3,.15,.25,.2,.05],
   title:'周遊列國<br><em>十四年</em>',
   dek:'齊國送來女樂，執政的季桓子三日不上朝。約五十五歲的孔子帶著弟子離開魯國，到衛、宋、鄭、陳、蔡等國，尋找願意實行他主張的國君。',
   groups:[{k:'困於匡 · 《論語・子罕》',h:'被誤認成仇人',p:'匡人把孔子誤認為曾經欺壓他們的陽虎，圍困了五天。孔子說：「文王既沒，文不在茲乎？」'},
@@ -360,7 +335,7 @@ const SLIDES = [
 
 最艱難的是在陳、蔡之間斷了糧，隨行的人都餓病了。子路生氣地問：君子也會這麼窮困嗎？孔子說：「君子固窮，小人窮斯濫矣。」君子在窮困時仍守得住自己，小人窮困了就什麼都做得出來。` },
 
-{ id:'return', label:'返魯', eyebrow:'返魯 · 前 484', mood:[.55,.7],
+{ id:'return', label:'返魯', mood:[.55,.7],
   title:'回到魯國<br><em>整理典籍</em>',
   dek:'六十八歲，孔子被迎回魯國。他不再求官，把最後的歲月留給教學，以及整理古代的典籍。',
   facts:['<b>詩、書：</b>編訂古代的詩歌與文獻','<b>禮、樂：</b>整理禮制與音樂',
@@ -379,7 +354,7 @@ const SLIDES = [
 
 不過要說明一下，這些說法多半出自後世的記載，孔子實際參與到什麼程度，學界還有不同的看法。` },
 
-{ id:'late', label:'晚年', eyebrow:'晚年 · 前 479', mood:[.3,.2,.1],
+{ id:'late', label:'晚年', mood:[.3,.2,.1],
   title:'天喪予<br><em>天喪予</em>',
   dek:'晚年接連失去最親近的學生。前 481 年前後，最得意的弟子顏回早逝；前 480 年，子路死於衛國的內亂。',
   facts:['<b>顏回之死：</b>孔子哭道：「噫！天喪予！天喪予！」（《論語・先進》）',
@@ -403,7 +378,7 @@ const SLIDES = [
 
 弟子們為他守喪三年才離開。只有子貢在墓旁搭了一間小屋，又多守了三年，一共六年。` },
 
-{ id:'legacy', label:'一生', eyebrow:'《論語・為政》', mood:1,
+{ id:'legacy', label:'一生', mood:1,
   title:'從心所欲<br><em>不踰矩</em>',
   dek:'孔子沒有親手寫下自己的學說。弟子與再傳弟子把他的言行編成《論語》，讓「仁」與「禮」、「學而不厭，誨人不倦」流傳了兩千五百年。',
   facts:['吾十有五而志于學','三十而立','四十而不惑','五十而知天命','六十而耳順','七十而從心所欲，不踰矩'],
@@ -419,7 +394,7 @@ const SLIDES = [
 
 一個出身清寒、做過倉庫管理員的人，一輩子沒有當上大官，卻因為「學而不厭，誨人不倦」，被後世尊為「至聖先師」。` },
 
-{ id:'sources', label:'資料來源', eyebrow:'REFERENCES', mood:1,
+{ id:'sources', label:'資料來源', mood:1,
   title:'資料<em>來源</em>',
   facts:['司馬遷《史記・孔子世家》','《論語》：為政、述而、子罕、先進、衛靈公、微子','《孟子・萬章下》','《左傳》：定公十年、哀公十五年','《莊子・漁父》（杏壇典故）'],
   plain:true, chips:['謝謝聆聽','Q & A'],
@@ -434,12 +409,11 @@ const SLIDES = [
    ===================================================================== */
 const $=s=>document.querySelector(s);
 const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag');
-const notes=$('.notes'), notesBtn=$('#notesBtn');
+const notes=$('.notes');
 const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
 const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isNarrow=()=>innerWidth<=820;
 let slideIdx=0, stepIdx=0, ready=false;
-$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
 
 const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
 
@@ -453,16 +427,15 @@ function groupHTML(g,i){
 }
 function renderCard(s){
   const n=SLIDES.indexOf(s)+1;
-  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const head=`<h2 class="title">${titleHTML(s.title)}</h2>`;
   const dek=s.dek?`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`:'';
   const stats=s.stats?`<div class="stats part" data-part="stats">${s.stats.map((x,i)=>`<div class="stat anim" style="--i:${i+3}"><b data-n="${x.n}">${x.n}</b><small>${x.u}</small><span>${x.l}</span></div>`).join('')}</div>`:'';
   const groups=(s.groups||[]).map(groupHTML).join('');
   const facts=s.facts?`<ul class="facts part ${s.plain?'plain':''}" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
   const quote=s.quote?`<blockquote class="quote part anim" data-part="quote" style="--i:3">${s.quote}</blockquote>`:'';
   const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
-  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
   const sources=s.sources?`<div class="sources anim" style="--i:8">${s.sources.map(x=>Array.isArray(x)?`<a href="${x[1]}" target="_blank" rel="noopener noreferrer">${x[0]}</a>`:`<span>${x}</span>`).join('')}</div>`:'';
-  card.innerHTML=`${head}${dek}${stats}${groups}${facts}${quote}${chips}${hint}${sources}`;
+  card.innerHTML=`${head}${dek}${stats}${groups}${facts}${quote}${chips}${sources}`;
 }
 /* 大數字從 0 數上來 */
 function countUp(root){
@@ -496,7 +469,6 @@ function go(i,step=0,instant=false){
     clearTimeout(swapTimer);
     swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0;if(!card.querySelector('.stats')?.hidden)countUp(card)},instant?0:420);
   }else applyStep(s,stepIdx,true);
-  $('#cur').textContent=String(i+1).padStart(2,'0');
   segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
   history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
   updateNotes();
@@ -515,9 +487,8 @@ function updateNotes(){
   const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
 }
 setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
-function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
-notesBtn.onclick=toggleNotes;
-$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+const toggleNotes=()=>notes.classList.toggle('open');
+const toggleFs=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
 $('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
 
 /* 鍵盤、滾輪、觸控 */
@@ -527,7 +498,7 @@ addEventListener('keydown',e=>{
   if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
   else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
   else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
-  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')toggleFs();
 });
 let wheelAcc=0,wheelLock=0;
 addEventListener('wheel',e=>{

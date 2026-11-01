@@ -38,18 +38,6 @@ a{color:var(--accent)}
 .load-error.show{display:block}
 
 /* ---------- 頂部列 ---------- */
-.topbar{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;pointer-events:none}
-.brand{font:11px var(--mono);letter-spacing:.18em;color:var(--muted);display:flex;align-items:center;gap:10px}
-.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite}
-.tools{display:flex;gap:8px;pointer-events:auto}
-.tool{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:rgba(10,18,36,.7);backdrop-filter:blur(10px);font:11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .25s,border-color .25s}
-.tool:hover{border-color:rgba(53,227,255,.55);background:rgba(53,227,255,.1)}
-.tool kbd{font:10px var(--mono);padding:1px 5px;border-radius:4px;background:var(--line)}
-.tool[aria-pressed="true"]{background:var(--accent);color:#03111a;border-color:var(--accent)}
-.tool[aria-pressed="true"] kbd{background:rgba(0,0,0,.18)}
-.counter{font:12px var(--mono);letter-spacing:.12em;padding:0 4px;display:flex;align-items:center}
-.counter b{font-weight:500;color:var(--ink)}
-.counter span{color:var(--muted)}
 
 /* ---------- 資訊卡 ---------- */
 .card{
@@ -76,8 +64,6 @@ a{color:var(--accent)}
 .card[data-layout="bottom"] .dek{font-size:14px}
 .card[data-layout="bottom"] .facts{display:none}
 
-.eyebrow{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
-.eyebrow .num{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .title{font-size:clamp(34px,4vw,60px);line-height:1.12;letter-spacing:-.045em;font-weight:900;margin:16px 0 14px}
 .card[data-layout="hero"] .title{font-size:clamp(48px,6.4vw,96px);margin:20px 0 18px}
 .title em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--magenta),var(--accent));background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite;padding:0 .04em;filter:drop-shadow(0 0 14px rgba(53,227,255,.35))}
@@ -90,8 +76,6 @@ a{color:var(--accent)}
 .facts li{counter-increment:f;display:grid;grid-template-columns:30px 1fr;gap:8px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.75;color:var(--text2)}
 .facts li::before{content:counter(f,decimal-leading-zero);font:11px var(--mono);color:var(--accent);padding-top:3px}
 .facts b{color:var(--ink)}
-.hint{display:flex;align-items:center;gap:10px;margin-top:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--muted)}
-.hint i{width:28px;height:1px;background:var(--accent);animation:nudge 1.4s ease-in-out infinite alternate}
 .sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;line-height:1.5}
 .sources::before{content:"參考資料";font:10px var(--mono);letter-spacing:.12em;color:var(--muted);width:100%}
 .sources a{text-decoration:none;border-bottom:1px solid rgba(53,227,255,.35)}
@@ -179,7 +163,6 @@ a{color:var(--accent)}
   .card[data-layout] .title{font-size:clamp(28px,8vw,40px)}
   .card[data-layout="bottom"] .card-grid{grid-template-columns:1fr;gap:12px}
   .flowrow,.cols{grid-template-columns:1fr 1fr}
-  .tool .lbl{display:none}
   .seg span{display:none}
   .navbtns{display:none}
 }
@@ -195,15 +178,6 @@ html.still *,html.still *::before,html.still *::after{animation-duration:.01ms!i
 <svg id="leader" aria-hidden="true"><path d=""/><circle class="dot" r="4"/><circle class="ring" r="6"/></svg>
 <div class="tag" aria-hidden="true"></div>
 <div id="hotspots"></div>
-
-<header class="topbar">
-  <div class="brand"><i></i>TECH × FUTURE CITY</div>
-  <div class="tools">
-    <div class="counter"><b id="cur">01</b><span>&nbsp;/&nbsp;<span id="tot">10</span></span></div>
-    <button class="tool" id="notesBtn" aria-pressed="false"><span class="lbl">講稿</span><kbd>N</kbd></button>
-    <button class="tool" id="fsBtn"><span class="lbl">全螢幕</span><kbd>F</kbd></button>
-  </div>
-</header>
 
 <article class="card" data-layout="hero" aria-live="polite"></article>
 
@@ -227,10 +201,9 @@ const {GLTFLoader,RoomEnvironment,EffectComposer,RenderPass,UnrealBloomPass,Outp
    steps：每按一次「下一步」進入下一個 step；layout 改變時資訊卡會移動
    ===================================================================== */
 const SLIDES = [
-{ id:'cover', label:'開場', sky:'night', eyebrow:'TECH × FUTURE CITY',
-  title:'科技與<br><em>未來城市</em>',
+{ id:'cover', label:'開場', sky:'night', title:'科技與<br><em>未來城市</em>',
   dek:'當感測器、網路、資料與綠色能源被編織進街道與建築，城市會變成一個能感知、能思考、也能自我調節的系統。',
-  chips:['數位分身','智慧交通','微電網','垂直綠化','無人機物流'], hint:true,
+  chips:['數位分身','智慧交通','微電網','垂直綠化','無人機物流'],
   steps:[{layout:'hero',parts:['dek','chips']}],
   notes:`各位老師、同學好，我們這組的主題是「科技與未來城市」。
 
@@ -238,8 +211,7 @@ const SLIDES = [
 
 接下來我們會從城市面臨的問題開始，再一一走訪六個關鍵設施，最後談談一座「聰明」的城市，該怎麼對待市民的資料。` },
 
-{ id:'urban', label:'城市挑戰', sky:'night', eyebrow:'WHY SMART CITIES',
-  title:'人往城市走，<br>城市要<em>更聰明</em>',
+{ id:'urban', label:'城市挑戰', sky:'night', title:'人往城市走，<br>城市要<em>更聰明</em>',
   dek:'聯合國估計，到 2050 年全球約 68% 的人口將住在都市地區（2018 年約為 55%）。更多人、更多車、更多用電，都在考驗城市的承載力。點選畫面上的標籤可以直接跳到該設施。',
   diagram:{type:'cols',items:[
     {k:'MOBILITY',cls:'now',h:'交通',li:['通勤壅塞與停車問題','事故與行人安全','物流車輛增加']},
@@ -254,7 +226,7 @@ const SLIDES = [
 
 （下一步）我們把挑戰整理成三類：第一是交通，壅塞、安全和越來越多的物流車；第二是能源與氣候，尖峰用電、減碳和熱島效應；第三是治理，資料分散在不同單位，決策不夠即時，同時市民也越來越在意隱私。` },
 
-{ id:'twin', label:'營運中心', sky:'night', eyebrow:'DIGITAL TWIN', focus:'城市營運中心', tagText:'城市營運中心',
+{ id:'twin', label:'營運中心', sky:'night', focus:'城市營運中心', tagText:'城市營運中心',
   title:'城市營運中心<br>與<em>數位分身</em>',
   dek:'把全市感測器的資料匯集到同一個平台，並建立一座與真實城市同步的「數位分身」，就能在虛擬世界先模擬、再到現實中行動。',
   facts:['<b>匯流：</b>交通、能源、環境、設施狀態集中在同一個儀表板','<b>模擬：</b>在數位分身中測試號誌調整、施工封路、颱風淹水等情境','<b>限制：</b>模型只和資料一樣好；感測器故障或資料延遲，判斷就會失準'],
@@ -272,7 +244,7 @@ const SLIDES = [
 
 但要記得，數位分身只和資料一樣好；感測器壞了或資料延遲，模擬就會失準。` },
 
-{ id:'pole', label:'智慧路燈', sky:'night', eyebrow:'SMART POLE', focus:'智慧路燈', tagText:'智慧路燈',
+{ id:'pole', label:'智慧路燈', sky:'night', focus:'智慧路燈', tagText:'智慧路燈',
   title:'智慧路燈<br>城市的<em>神經末梢</em>',
   dek:'路燈遍布每一條街，本來就有電力和高度。把它升級成多功能桿，就能同時承載照明、感測與通訊。',
   facts:['<b>照明：</b>LED 可依人車流量調整亮度，深夜無人時降低耗電','<b>感測：</b>可加裝空品、溫濕度、車流計數等感測器（琥珀色模組）','<b>通訊：</b>桿上空間可設置小型基地台，補強 5G 訊號覆蓋'],
@@ -285,7 +257,7 @@ const SLIDES = [
 
 所以一支路燈，就像城市伸出去的一個神經末梢。` },
 
-{ id:'mobility', label:'智慧交通', sky:'night', eyebrow:'MOBILITY', focus:'智慧路口號誌', tagText:'智慧路口號誌',
+{ id:'mobility', label:'智慧交通', sky:'night', focus:'智慧路口號誌', tagText:'智慧路口號誌',
   title:'自駕車與<br><em>會思考的路口</em>',
   dek:'路口的攝影機與光達（頂端洋紅色感測器）偵測車流與行人，號誌依現況調整秒數；車輛也能與路側設備交換資訊（V2X）。',
   facts:['<b>自駕分級：</b>SAE J3016 把駕駛自動化分為 0～5 級，多數市售車輛屬於輔助駕駛','<b>路口協作：</b>號誌把燈號與剩餘秒數傳給車輛，車輛回報位置與速度','<b>安全優先：</b>行人與自行車的偵測，比車流效率更重要'],
@@ -299,7 +271,7 @@ const SLIDES = [
 
 未來路口和車輛可以互相溝通，號誌告訴車還剩幾秒，車回報自己的位置和速度。但我們認為最重要的是：偵測行人和自行車，比讓車流更快更優先。` },
 
-{ id:'energy', label:'綠能微電網', sky:'night', eyebrow:'MICROGRID', focus:'儲能站', tagText:'儲能站',
+{ id:'energy', label:'綠能微電網', sky:'night', focus:'儲能站', tagText:'儲能站',
   title:'太陽、風與電池<br>組成<em>微電網</em>',
   dek:'屋頂太陽能與風機發電，儲能站把多餘的電存起來；必要時，這個區域電網還能與主電網分離、獨立運作。',
   facts:['<b>發電：</b>太陽能看日照、風機看風況，兩者都會波動','<b>儲能：</b>電池在離峰或發電過剩時充電、尖峰時放電，平衡供需','<b>韌性：</b>主電網故障時，微電網可「孤島運轉」，優先供電給醫院、避難所等關鍵設施'],
@@ -315,7 +287,7 @@ const SLIDES = [
 
 第三，也是最重要的，韌性：如果主電網因為颱風或地震故障，微電網可以和主電網分開、獨立運作，優先供電給醫院、避難所這些關鍵設施。` },
 
-{ id:'green', label:'垂直綠化', sky:'night', eyebrow:'GREEN ARCHITECTURE', focus:'垂直森林大樓', tagText:'垂直森林大樓',
+{ id:'green', label:'垂直綠化', sky:'night', focus:'垂直森林大樓', tagText:'垂直森林大樓',
   title:'把森林<br><em>種上大樓</em>',
   dek:'科技城市不只有鋼鐵與玻璃。陽台錯落種植的「垂直森林」，讓建築本身成為生態系的一部分。',
   facts:['<b>實例：</b>米蘭「垂直森林」兩棟住宅塔高 110 與 76 公尺，種植約 800 棵樹與 4,500 株灌木','<b>效益：</b>遮蔭降溫、調節濕度、降低噪音，並提供鳥類與昆蟲棲地','<b>科技角色：</b>以感測器監測土壤濕度、自動灌溉，並安排定期修剪與維護'],
@@ -331,7 +303,7 @@ const SLIDES = [
 
 那科技在這裡扮演什麼角色？例如用感測器監測土壤濕度、自動灌溉，讓這麼多植物在高樓上也能被照顧好。` },
 
-{ id:'drone', label:'無人機物流', sky:'night', eyebrow:'URBAN AIR LOGISTICS', focus:'無人機起降站', tagText:'無人機起降站',
+{ id:'drone', label:'無人機物流', sky:'night', focus:'無人機起降站', tagText:'無人機起降站',
   title:'無人機物流<br>開啟<em>第三維度</em>',
   dek:'屋頂的起降站讓無人機在建築之間運送藥品、包裹與檢修零件，把一部分配送從擁擠的地面移到空中。',
   facts:['<b>用途：</b>緊急醫療物資、偏鄉或離島配送、設施巡檢','<b>挑戰：</b>噪音、隱私、墜落風險，以及多架無人機之間的空域管理','<b>法規：</b>台灣《民用航空法》設有遙控無人機專章，規範註冊、操作證與飛航限制'],
@@ -347,8 +319,7 @@ const SLIDES = [
 
 台灣的《民用航空法》已經有遙控無人機的專章，規範註冊、操作證和飛航限制。` },
 
-{ id:'privacy', label:'資料治理', sky:'night', eyebrow:'DATA GOVERNANCE',
-  title:'聰明的城市，<br>也要<em>值得信任</em>',
+{ id:'privacy', label:'資料治理', sky:'night', title:'聰明的城市，<br>也要<em>值得信任</em>',
   dek:'整座城市都在產生資料。罩住城市的這層網格，代表資料治理的邊界：什麼可以收、能用在哪裡、誰來監督？',
   diagram:{type:'cols',items:[
     {k:'COLLECT',cls:'now',h:'蒐集',li:['只收達成目的所需的資料','能匿名就不記名','影像在設備端先去識別化']},
@@ -368,8 +339,7 @@ const SLIDES = [
 
 公開與監督：不涉及個人的資料可以開放；感測器裝在哪裡、做什麼用，也應該公開讓市民查詢。` },
 
-{ id:'closing', label:'結語', sky:'night', eyebrow:'CONCLUSION',
-  title:'科技是工具，<br><em>人</em>才是城市',
+{ id:'closing', label:'結語', sky:'night', title:'科技是工具，<br><em>人</em>才是城市',
   dek:'未來城市的關鍵，不是最多的感測器或最快的網路，而是讓科技回應人的需要，同時保有透明與選擇。',
   facts:['<b>感知與決策：</b>數位分身與營運中心讓城市即時反應，但最終由人核可','<b>移動與能源：</b>智慧路口、自駕車與微電網，讓城市更安全、更有韌性','<b>環境與治理：</b>垂直綠化回應氣候，資料治理守住信任'],
   chips:['謝謝聆聽','Q & A'],
@@ -390,12 +360,11 @@ const SLIDES = [
    ===================================================================== */
 const $=s=>document.querySelector(s);
 const card=$('.card'), rail=$('.rail'), leader=$('#leader'), leaderPath=leader.querySelector('path'), leaderDot=leader.querySelector('.dot'), leaderRing=leader.querySelector('.ring'), tag=$('.tag'), hotLayer=$('#hotspots');
-const notes=$('.notes'), notesBtn=$('#notesBtn');
+const notes=$('.notes');
 const still=new URLSearchParams(location.search).has('still');if(still)document.documentElement.classList.add('still');
 const reduced=still||matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isNarrow=()=>innerWidth<=820;
 let slideIdx=0, stepIdx=0, ready=false;
-$('#tot').textContent=String(SLIDES.length).padStart(2,'0');
 
 /* 進度軌 */
 const segs=SLIDES.map((s,i)=>{const b=document.createElement('button');b.className='seg';b.setAttribute('aria-label',`第 ${i+1} 頁：${s.label}`);b.innerHTML=`<i></i><span>${String(i+1).padStart(2,'0')} ${s.label}</span>`;b.onclick=()=>go(i,0);rail.insertBefore(b,rail.lastElementChild);return b});
@@ -411,14 +380,13 @@ function diagramHTML(d){
 }
 function renderCard(s){
   const n=SLIDES.indexOf(s)+1;
-  const head=`<div class="eyebrow anim" style="--i:0"><span class="num">${String(n).padStart(2,'0')}</span>${s.eyebrow}</div><h2 class="title">${titleHTML(s.title)}</h2>`;
+  const head=`<h2 class="title">${titleHTML(s.title)}</h2>`;
   const dek=`<p class="dek part anim" data-part="dek" style="--i:2">${s.dek}</p>`;
   const chips=s.chips?`<div class="chips part" data-part="chips">${s.chips.map((c,i)=>`<span class="chip anim" style="--i:${i+3}">${c}</span>`).join('')}</div>`:'';
   const facts=s.facts?`<ul class="facts part" data-part="facts">${s.facts.map((f,i)=>`<li class="anim" style="--i:${i+3}"><span>${f}</span></li>`).join('')}</ul>`:'';
   const diagram=s.diagram?`<div class="diagram part" data-part="diagram">${diagramHTML(s.diagram)}</div>`:'';
-  const hint=s.hint?`<div class="hint anim" style="--i:6"><i></i>按 → 或捲動開始</div>`:'';
   const sources=s.sources?`<div class="sources anim" style="--i:7">${s.sources.map(([l,u])=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${l}</a>`).join('')}</div>`:'';
-  card.innerHTML=`<div class="card-grid"><div>${head}${dek}${chips}</div><div>${diagram}</div></div>${facts}${hint}${sources}`;
+  card.innerHTML=`<div class="card-grid"><div>${head}${dek}${chips}</div><div>${diagram}</div></div>${facts}${sources}`;
 }
 function applyStep(s,step,animateParts){
   const st=s.steps[step];
@@ -443,7 +411,6 @@ function go(i,step=0,instant=false){
     clearTimeout(swapTimer);
     swapTimer=setTimeout(()=>{renderCard(s);applyStep(s,stepIdx,false);card.classList.remove('leaving');void card.offsetWidth;card.classList.add('in');card.scrollTop=0},instant?0:420);
   }else applyStep(s,stepIdx,true);
-  $('#cur').textContent=String(i+1).padStart(2,'0');
   segs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.classList.toggle('done',k<=i)});
   history.replaceState(null,'',`${location.search}#${i+1}${stepIdx?'.'+(stepIdx+1):''}`);
   updateNotes();
@@ -462,9 +429,8 @@ function updateNotes(){
   const nx=SLIDES[slideIdx+1];$('#notesNext').textContent=nx?`下一頁：${nx.label}`:'最後一頁';
 }
 setInterval(()=>{const e=Math.floor((performance.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000);
-function toggleNotes(){const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-pressed',o)}
-notesBtn.onclick=toggleNotes;
-$('#fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+const toggleNotes=()=>notes.classList.toggle('open');
+const toggleFs=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
 $('#nextBtn').onclick=next;$('#prevBtn').onclick=prev;
 
 /* 鍵盤、滾輪、觸控 */
@@ -474,7 +440,7 @@ addEventListener('keydown',e=>{
   if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(k)){e.preventDefault();next()}
   else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
   else if(k==='Home')go(0,0);else if(k==='End')go(SLIDES.length-1,0);
-  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')$('#fsBtn').click();
+  else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')toggleFs();
 });
 let wheelAcc=0,wheelLock=0;
 addEventListener('wheel',e=>{
