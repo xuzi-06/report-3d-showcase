@@ -1,5 +1,3 @@
-# Store .bat byte-for-byte (CRLF) so it works from clone, ZIP or raw download
-*.bat -text
 *.glb binary
 *.blend binary
 *.glb.js -diff linguist-generated

@@ -1,4 +1,4 @@
-# 用 Blender MCP 建構主題模型
+# 用 Blender 建構主題模型
 
 ## 依主題決定風格
 
@@ -6,12 +6,15 @@
 |---|---|---|
 | 住宅／生活 | 溫暖、可親、有人住過的感覺 | 精緻家具（沙發、餐桌、書櫃、床）、暖色燈光（2700–3200K 點光／面光）、生活小物（植物、書、地毯、抱枕）、可剖面看到的樓層 |
 | 科技／未來 | 冷調、發光、秩序感 | 深色地面＋發光網格、霓虹邊光（Emission 材質）、深色玻璃帷幕＋發光窗帶、資料線路、配色（青／洋紅／深藍，點綴琥珀） |
+| 社會議題／故事 | 簡潔低多邊形、讓角色成為焦點 | 一個主場景（學校、街區）、可拆成四肢子物件的角色小人、能隨氛圍變色的材質（灰暗→明亮），參考 `assets/example-story/` |
+| 歷史／古風 | 宣紙水墨、留白、朱砂點綴 | 台基與屋頂分明的建築、松樹與山形剪影、跨場景的道路與橋，參考 `assets/example-ink/`（主體要清楚，雲霧只是點綴） |
 | 其他 | 流暢、有韻律 | 曲面與重複結構、和諧配色、可做循環動畫的元件（旋轉、浮動、波動） |
 
 主題常常是混合的（例如「資通訊科技與住」= 住宅＋科技）：主體用住宅風格，科技元素用科技風格點綴。
 
 ## 工作方式
 
+- 沒有 MCP 時改寫成一份完整的 bpy 腳本，用 `blender --background --factory-startup --python <腳本>` 建模並匯出，再打包成 HTML 截圖檢查（範例：`assets/example-ink/assets/models/孔子生平.py`）。以下 MCP 專用的工具（`look` 等）就跳過。
 - 先 `get_addon_status`、`get_scene_info`；用 `execute_blender_code` 分批建立（地面與道路 → 主體建築 → 特色設施 → 動態物件），**每批用 `look` 看一次**（`mode:"angles"`、`shading:"material"`、`max_size` 640–800 省 token；`target` 可指定物件近看細節）。
 - 腳本開頭清空場景、建立材質表；之後每批用 `bpy.data.collections[...]` 與 `{m.name:m for m in bpy.data.materials}` 取回，不要依賴上一批的 Python 變數。
 - Principled BSDF 用 `n.type=='BSDF_PRINCIPLED'` 找節點，輸入用 identifier 找（`'Base Color'`、`'Emission Color'`、`'Emission Strength'`、`'Alpha'`）——Blender 介面可能是中文，節點名稱會被翻譯。

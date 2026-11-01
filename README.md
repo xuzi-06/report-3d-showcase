@@ -7,7 +7,7 @@
 
 | 產出 | 內容 |
 |---|---|
-| `assets/models/*.glb` | 用 Blender（透過 Blender MCP）建構的主題 3D 模型，每個要特寫的物件都有具名節點 |
+| `assets/models/*.glb` | 用 Blender 建構的主題 3D 模型（透過 Blender MCP，或以背景模式執行建模腳本），每個要特寫的物件都有具名節點 |
 | `main.html` | three.js 互動簡報原始檔：資訊卡漸顯與移位、標題逐行升起、鏡頭弧線飛行、流光資料流、講稿面板 |
 | **`dist/<標題>.html`** | **交付物**：three.js、模型、程式全部內嵌的單一檔案。任何有 Chrome／Edge 的電腦雙擊即可播放，可以離線，**不需要 Python、Blender、伺服器或網路** |
 | `簡報講稿.md`（選用） | 逐頁講稿，含時長估算與「按 → 下一步」標記 |
@@ -15,6 +15,12 @@
 ## 範例
 
 四份範例只示範格式與動畫手法，不是要套用的大綱：
+
+| 淺色生活風 | 夜景霓虹風 |
+|---|---|
+| ![資通訊科技與住](docs/example.jpg) | ![科技與未來城市](docs/example-dark.jpg) |
+| **灰暗→明亮敘事風** | **水墨古風敘事** |
+| ![斷在學校](docs/example-story.jpg) | ![孔子生平](docs/example-ink.jpg) |
 
 - **淺色生活風** `assets/example/` —「資通訊科技與住」，13 頁、含完整講稿
 - **夜景霓虹風** `assets/example-dark/` —「科技與未來城市」，10 頁
@@ -35,7 +41,8 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 
 **製作端**（跑 Claude Code 的電腦）：
 - Windows（打包與截圖腳本使用內建的 PowerShell 和 Edge）
-- [Blender](https://www.blender.org/) 4.x 以上與 Blender MCP（skill 會檢查並引導安裝，見 `references/blender-mcp-setup.md`）
+- [Blender](https://www.blender.org/) 4.x 以上
+- Blender MCP（建議，可即時截圖檢查模型；skill 會檢查並在你同意後安裝，見 `references/blender-mcp-setup.md`）。不想裝 MCP 時，skill 會改用 `blender --background` 執行建模腳本，不需安裝任何東西
 
 **播放端**（報告用的電腦）：只要有 Chrome 或 Edge，不需安裝任何東西，也不需網路。有網路時會載入 Noto 字型，離線時自動改用微軟正黑體。
 
@@ -48,7 +55,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 流程：
 
 0. **收集文案**：整理成逐頁清單給你確認。沒有文案時會給你 `assets/文案範本.md` 填寫，不會自行代寫
-1. **檢查 Blender MCP**：未就緒時會先徵求同意再安裝
+1. **檢查 Blender MCP**：未就緒時會先徵求同意再安裝；也可以不裝，改用 Blender 背景模式建模
 2. **建模**：依文案決定要建哪些物件，分批建模並截圖檢查，匯出 GLB
 3. **前端**：複製範本，把 `SLIDES` 整個換成你的文案，設定鏡位與資料流
 4. **打包**：`scripts/build.ps1` 把模型與程式全部內嵌成 `dist/<標題>.html`
@@ -78,6 +85,7 @@ git clone https://github.com/xuzi-06/report-3d-showcase.git "$env:USERPROFILE\.c
 ```
 report-3d-showcase/
 ├─ SKILL.md                    # Skill 主說明（Claude 讀這份）
+├─ docs/                       # README 預覽圖
 ├─ assets/
 │  ├─ vendor/                  # three.js 打包入口（重新打包用）與授權
 │  ├─ 文案範本.md               # 給使用者填寫的文案格式

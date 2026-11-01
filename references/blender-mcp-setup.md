@@ -26,6 +26,7 @@ netstat -ano | findstr ":9876"                    # 外掛 socket 是否在聽
 
 ```powershell
 $bl = Get-ChildItem 'C:\Program Files\Blender Foundation' -Recurse -Filter blender.exe -Depth 2 | Select -First 1 -Expand FullName
+# 找不到時查 Steam 版：<Steam 資料庫>\steamapps\common\Blender\blender.exe（或查登錄檔的解除安裝清單）
 Start-Process $bl
 foreach ($i in 1..30) { Start-Sleep 2; if (netstat -ano | findstr ":9876.*LISTENING") { "ready after $($i*2)s"; break } }
 ```
@@ -52,5 +53,5 @@ foreach ($i in 1..30) { Start-Sleep 2; if (netstat -ano | findstr ":9876.*LISTEN
 
 ## 無法使用 Blender 時的備案
 
-- 有裝 Blender、但不想用 MCP：`blender --background --python build.py` 執行同一份 bpy 腳本並匯出 GLB（看不到即時截圖）。
+- 有裝 Blender、但不想用 MCP：`blender --background --factory-startup --python <腳本>` 執行 bpy 腳本並匯出 GLB（看不到即時截圖，改用打包後的 HTML 截圖檢查）。完整範例見 `assets/example-ink/assets/models/孔子生平.py`。
 - 完全沒有 Blender：在 `main.html` 內用 three.js 程式化建模，但先告知使用者細節會較少。

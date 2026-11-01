@@ -14,7 +14,7 @@ const loadGLB=name=>{...};                                // 解 base64 → load
 loadGLB('智慧住宅').then(g=>{...})                          // 取代 loader.loadAsync('assets/models/….glb')
 ```
 
-`window.THREE_ADDONS` 提供：GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass。需要其他 addon（例如 OrbitControls）時，把它加進 `assets/vendor/three.bundle.entry.js`，在暫存資料夾執行 `npm i three@0.169.0 esbuild` 和 `npx esbuild three.bundle.entry.js --bundle --minify --format=iife --outfile=three.bundle.min.js`，再覆蓋三個範本的 `vendor/three.bundle.min.js`（`assets/example*/vendor/`）。不要改回 `import ... from 'three/addons/...'`，那樣離線就打不開了。
+`window.THREE_ADDONS` 提供：GLTFLoader、RoomEnvironment、EffectComposer、RenderPass、UnrealBloomPass、OutputPass、ShaderPass。需要其他 addon（例如 OrbitControls）時，把它加進 `assets/vendor/three.bundle.entry.js`，在暫存資料夾執行 `npm i three@0.169.0 esbuild` 和 `npx esbuild three.bundle.entry.js --bundle --minify --format=iife --outfile=three.bundle.min.js`，再覆蓋四個範本的 `vendor/three.bundle.min.js`（`assets/example*/vendor/`）。不要改回 `import ... from 'three/addons/...'`，那樣離線就打不開了。
 
 ## 檔案結構（行號為範例檔大約位置）
 
